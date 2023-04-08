@@ -1,0 +1,16 @@
+Training_Normal_Videos_Anomaly/Normal_Videos633_x264.mp4
+Training_Normal_Videos_Anomaly/Normal_Videos307_x264.mp4
+Training_Normal_Videos_Anomaly/Normal_Videos308_x264.mp4
+Shoplifting053_x264_clip.npy
+Burglary026_x264_clip.npy
+Vandalism048_x264_clip.npy
+Shooting030_x264_clip.npy
+Robbery129_x264_clip.npy
+Explosion041_x264_clip.npy
+Arson024_x264_clip.npy
+Abuse043_x264_clip.npy
+Shoplifting041_x264_clip.npy
+Shoplifting042_x264_clip.npy
+
+
+D:\Git Repo\CLIP_Videoframes_Dataloader\anomaly
