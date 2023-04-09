@@ -128,18 +128,14 @@ def seed_everything(seed: int = 10):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-
-def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats):
-    best_auc = 0.5
+def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, best_auc):
     #aucs = []
-    
+
     for epoch in range(epochs):
         loss = train(epoch, model, optimizer, device, [train_anomaly_dl, train_normal_dl], train_bs)
         #wandb.log({"train_loss":loss})
         auc = test(epoch, model, optimizer, device, val_dl, valid_bs, num_feats)
         #aucs.append(auc)
-        if args.use_wandb:
-            wandb.log({"AUC":auc, "train_loss":loss})
         print(f'AUC score for epoch {epoch+1} : {auc}')
         if auc > best_auc:
             save_path = 'best_model.pth'
@@ -154,8 +150,6 @@ def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, ep
     #plt.xlabel('epochs')
     #plt.ylabel('AUC')
     #plt.savefig(path_for_plots)
-    if args.use_wandb:
-        wandb.finish()
     
     return best_auc, model
 
@@ -180,8 +174,8 @@ def predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data =
     sorted_idx = np.argsort(np.array(predicted_gts))
     num_vids = int(percent_data*len(predicted_gts))
 
-    normal_idx = [sorted_idx[i] for i in range(len(num_vids))]
-    anomaly_idx = [sorted_idx[-i-1] for i in range(len(num_vids))]
+    normal_idx = [sorted_idx[i] for i in range(num_vids)]
+    anomaly_idx = [sorted_idx[-i-1] for i in range(num_vids)]
 
 
     return normal_idx, anomaly_idx
@@ -273,24 +267,29 @@ if __name__ == '__main__':
 
     
     list_of_unlabelled_videos = os.listdir(path_to_unlabelled)
+    curr_best_auc = 0.5
 
     for epoch in range(total_epochs):
 
         print("################################")
-        print("TOTAL EPOCH: ", epoch)
+        print("TOTAL EPOCH: ", epoch+1)
         print("################################")
 
         print("Length of normal dataset: ", len(train_normal_ds))
         print("Length of anomaly dataset: ", len(train_anomaly_ds))
         print("Length of unlabelled dataset remaining: ", len(list_of_unlabelled_videos))
 
-        best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats)
+        best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc)
         print("BEST TEST AUC: ", best_auc)
 
+        if best_auc > curr_best_auc:
+            curr_best_auc = best_auc
+
         if args.use_wandb:
-            wandb.log({"BEST AUC":best_auc})
+            wandb.log({"auc_per_run":curr_best_auc})
         
         ## Do we need to load best model??? YES
+        # for that update later
         normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data/2, num_feats)
         
         
@@ -303,14 +302,16 @@ if __name__ == '__main__':
 
         # modifying the datasets
 
-        train_anomaly_ds = AnomalyVideo_modified(path_to_anomaly, list_of_unlabelled_videos, anomaly_idx, num_feats)
-        train_normal_ds = NormalVideo_modified(path_to_normal, list_of_unlabelled_videos, normal_idx, num_feats)
+        train_anomaly_ds = AnomalyVideo_modified(path_to_anomaly, path_to_unlabelled, anomaly_idx, num_feats)
+        train_normal_ds = NormalVideo_modified(path_to_normal, path_to_unlabelled, normal_idx, num_feats)
 
-       
         # modifying the dataloaders
 
         train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True)
         train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True)
+    if args.use_wandb:
+        wandb.finish()
+
 
 
         # list_of_unlabelled_videos = [list_of_unlabelled_videos[idx] for idx in unlabelled_idx]
