@@ -191,7 +191,6 @@ class AnomalyVideo_modified(Dataset):
         return x
     
     def __getitem__(self, idx: int):
-        print(idx)
         anomaly_clip = np.load(os.path.join(self.base_dir, self.total_list[idx]))
         x = torch.from_numpy(anomaly_clip).to(torch.float32)
         x = self.interpolate(x, x.shape[0])
@@ -260,7 +259,6 @@ class UnlabelledVideo(Dataset):
         return len(self.list_of_videos)
     
     def interpolate(self, x, input_frames):
-        print(x.shape)
         # adding a batch
         x = x.unsqueeze(0)
         # [bs, frames, 512]
@@ -278,7 +276,6 @@ class UnlabelledVideo(Dataset):
         x = torch.from_numpy(clip_feat).to(torch.float32)
         num_frames = x.shape[0]
         # interpolating it
-        print(self.list_of_videos[idx])
         x = self.interpolate(x, x.shape[0])
         # removing the batch we don't need it; it would be added by the dataloader
         x = x.squeeze(0)

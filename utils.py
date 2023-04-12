@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 # MIL loss function
 # ***Version - 1 ****
-def MIL(combined_anomaly_scores, batch_size):
+def MIL(combined_anomaly_scores):
     '''
     MIL stands for Multiple Instance Loss
     It takes the maximum of two bags (here each bag has 3000 frames each)
@@ -14,13 +14,15 @@ def MIL(combined_anomaly_scores, batch_size):
     loss = relu(1 - 1 + 0) = 0 # ideal case
     worst case = relu(1 - 0 + 1) = 2 # identifies normal video as anomaly and vice-versa
     '''
-    combined_anomaly_scores = combined_anomaly_scores.squeeze(-1) 
+    combined_anomaly_scores = combined_anomaly_scores.squeeze(-1)
+    total = combined_anomaly_scores.shape[0] # total number of combineed features 50% is from normal bag 50% is from anomaly bag
+    offset = (total // 2)
     loss = 0 
-    for i in range(batch_size):
+    for i in range(offset):
         y_abnormal_max = torch.max(combined_anomaly_scores[i, :])
-        y_normal_max = torch.max(combined_anomaly_scores[i+batch_size, :]) 
+        y_normal_max = torch.max(combined_anomaly_scores[i+offset, :]) 
         loss += F.relu(1. - y_abnormal_max + y_normal_max) 
-    return loss/batch_size
+    return loss/offset
 
     # combined loss = (2*batch_size)
     #loss = 0

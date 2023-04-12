@@ -16,6 +16,8 @@ from sklearn import metrics
 import random
 import wandb
 import argparse
+import gc
+import torchmetrics
 
 def train(epoch, model, optim, device, train_dl, batch_size):
     '''
@@ -39,7 +41,7 @@ def train(epoch, model, optim, device, train_dl, batch_size):
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
-        loss = MIL(combined_anomaly_scores, batch_size)
+        loss = MIL(combined_anomaly_scores)
         running_loss += loss.item()
 
         optim.zero_grad()
@@ -48,6 +50,9 @@ def train(epoch, model, optim, device, train_dl, batch_size):
 
 
     print('train loss = {}'.format(running_loss/l))
+    del anomaly_dl, normal_dl, clip_a, clip_n, score_a, score_n
+    gc.collect()
+    torch.cuda.empty_cache()
     return (running_loss / l)
 
 
@@ -112,9 +117,10 @@ def test(epoch, model, optim, device, val_dl, batch_size, frames=3000):
                 except:
                     pass
                 all_gts.extend(video_gt_list)
-    auc = metrics.roc_auc_score(all_gts, all_scores)
-    fpr, tpr, thresholds = metrics.roc_curve(all_gts, all_scores, pos_label=1)
-    auc = metrics.auc(fpr, tpr)
+
+    all_scores, all_gts = torch.tensor(all_scores), torch.tensor(all_gts)
+    auroc = torchmetrics.AUROC(task="binary")
+    auc = auroc(all_scores, all_gts)
     return auc
             
             
@@ -138,6 +144,7 @@ def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, ep
         #aucs.append(auc)
         print(f'AUC score for epoch {epoch+1} : {auc}')
         if auc > best_auc:
+            print('Saving the best model')
             save_path = 'best_model.pth'
             if args.save:
                 torch.save(model.state_dict(), save_path)
@@ -243,12 +250,12 @@ if __name__ == '__main__':
 
     # dataloaders
 
-    train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True)
-    train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True)
+    train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True, num_workers=16)
+    train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True, num_workers=16)
 
-    val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True)
+    val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=16)
 
-    unlabelled_dl = DataLoader(unlabelled_ds, batch_size=valid_bs, shuffle=False) 
+    unlabelled_dl = DataLoader(unlabelled_ds, batch_size=valid_bs, shuffle=False, num_workers=16) 
 
     if args.use_wandb:
         wandb.init(
@@ -280,7 +287,7 @@ if __name__ == '__main__':
         print("Length of unlabelled dataset remaining: ", len(list_of_unlabelled_videos))
 
         best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc)
-        print("BEST TEST AUC: ", best_auc)
+        print("BEST TEST AUC: ", best_auc.item())
 
         if best_auc > curr_best_auc:
             curr_best_auc = best_auc
@@ -289,8 +296,12 @@ if __name__ == '__main__':
             wandb.log({"auc_per_run":curr_best_auc})
         
         ## Do we need to load best model??? YES
+        if args.save:
+            print('Loading the best model')
+            model.load_state_dict(torch.load('best_model.pth'))
         # for that update later
-        normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data/2, num_feats)
+        
+        normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
         
         
         ######
@@ -307,8 +318,8 @@ if __name__ == '__main__':
 
         # modifying the dataloaders
 
-        train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True)
-        train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True)
+        train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True,num_workers=16)
+        train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True, num_workers=16)
     if args.use_wandb:
         wandb.finish()
 

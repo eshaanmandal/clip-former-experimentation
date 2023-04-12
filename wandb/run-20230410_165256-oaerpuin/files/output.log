@@ -1,0 +1,51 @@
+################################
+TOTAL EPOCH:  1
+################################
+Length of normal dataset:  800
+Length of anomaly dataset:  800
+Length of unlabelled dataset remaining:  197
+Epoch 1
+
+
+
+
+
+
+
+
+
+ 92%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████▍              | 732/800 [00:19<00:01, 36.83it/s]
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 800/800 [00:21<00:00, 37.91it/s]
+  0%|                                                                                                                                                                                      | 0/290 [00:00<?, ?it/s]
+
+
+
+
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 290/290 [00:06<00:00, 43.47it/s]
+AUC score for epoch 1 : 0.82524174451828
+Saving the best model
+Best AUC score is 0.82524174451828
+Epoch 2
+  0%|▍                                                                                                                                                                         | 2/800 [03:48<25:21:17, 114.38s/it]
+Traceback (most recent call last):
+  File "main.py", line 289, in <module>
+    best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc)
+  File "main.py", line 141, in train_once
+    loss = train(epoch, model, optimizer, device, [train_anomaly_dl, train_normal_dl], train_bs)
+  File "main.py", line 33, in train
+    for anomaly, normal in tqdm(zip(anomaly_dl, normal_dl), total=l):
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/site-packages/tqdm/std.py", line 1178, in __iter__
+    for obj in iterable:
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 628, in __next__
+    data = self._next_data()
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1316, in _next_data
+    idx, data = self._get_data()
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1272, in _get_data
+    success, data = self._try_get_data()
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/site-packages/torch/utils/data/dataloader.py", line 1120, in _try_get_data
+    data = self._data_queue.get(timeout=timeout)
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/queue.py", line 179, in get
+    self.not_empty.wait(remaining)
+  File "/local/scratch/v_eshaan_mandal/miniconda3/envs/clip_feats/lib/python3.8/threading.py", line 306, in wait
+    gotit = waiter.acquire(True, timeout)
+KeyboardInterrupt
