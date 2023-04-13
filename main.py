@@ -134,7 +134,7 @@ def seed_everything(seed: int = 10):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, best_auc):
+def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, best_auc, model_name):
     #aucs = []
 
     for epoch in range(epochs):
@@ -144,9 +144,9 @@ def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, ep
         #aucs.append(auc)
         print(f'AUC score for epoch {epoch+1} : {auc}')
         if auc > best_auc:
-            print('Saving the best model')
-            save_path = 'best_model.pth'
+            save_path = model_name
             if args.save:
+                print(f'Saving the best model params to : {save_path}')
                 torch.save(model.state_dict(), save_path)
             best_auc = auc
         print(f'Best AUC score is {best_auc}')
@@ -210,6 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('--p_name', type=str, default='default_proj', help='name of the wandb project (if using wandb)')
     parser.add_argument('--save', type=bool, default=False, help='Save the best AUC score model')
     parser.add_argument('--percent_data', type=float, default=0.2, help='percentage of unlabelled data to use for total normal and abnormal (write as 0.1 or 0.2)')
+    parser.add_argument('--model_name', type=str, default='best_model.pth', help='Save name of the model params')
     args = parser.parse_args()
 
     # the hyperparameters
@@ -279,14 +280,14 @@ if __name__ == '__main__':
     for epoch in range(total_epochs):
 
         print("################################")
-        print("TOTAL EPOCH: ", epoch+1)
+        print("SSL Step: ", epoch+1)
         print("################################")
 
         print("Length of normal dataset: ", len(train_normal_ds))
         print("Length of anomaly dataset: ", len(train_anomaly_ds))
         print("Length of unlabelled dataset remaining: ", len(list_of_unlabelled_videos))
 
-        best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc)
+        best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc, args.model_name)
         print("BEST TEST AUC: ", best_auc.item())
 
         if best_auc > curr_best_auc:
@@ -297,8 +298,8 @@ if __name__ == '__main__':
         
         ## Do we need to load best model??? YES
         if args.save:
-            print('Loading the best model')
-            model.load_state_dict(torch.load('best_model.pth'))
+            print(f'Loading the best model params from : {args.model_name}')
+            model.load_state_dict(torch.load(args.model_name))
         # for that update later
         
         normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
