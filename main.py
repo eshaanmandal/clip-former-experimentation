@@ -144,7 +144,7 @@ def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, ep
         #aucs.append(auc)
         print(f'AUC score for epoch {epoch+1} : {auc}')
         if auc > best_auc:
-            save_path = model_name
+            save_path = os.path.join('./checkpoints',model_name)
             if args.save:
                 print(f'Saving the best model params to : {save_path}')
                 torch.save(model.state_dict(), save_path)
@@ -197,7 +197,6 @@ if __name__ == '__main__':
     parser.add_argument('--heads', type=int, default=4, help='Number of attention heads')
     parser.add_argument('--wd', type=float, default=0.001, help='Weight decay of the Adam optimizer')
     parser.add_argument('--lr', type=float, default=1e-5, help='Learning rate of the Adam optimizer')
-    parser.add_argument('--feats', type=int, default=64, help='Interpolation number of frames')
     parser.add_argument('--epochs', type=int, default=10, help='Number of epochs till which to train the model once')
     parser.add_argument('--total_epochs', type=int, default=2, help='Number of epochs for which to train the whole model including unlabelled dataset')
     parser.add_argument('--n_path', type=str, default='../Normal', help='Path to normal video clip feats.')
@@ -212,6 +211,14 @@ if __name__ == '__main__':
     parser.add_argument('--percent_data', type=float, default=0.2, help='percentage of unlabelled data to use for total normal and abnormal (write as 0.1 or 0.2)')
     parser.add_argument('--model_name', type=str, default='best_model.pth', help='Save name of the model params')
     args = parser.parse_args()
+
+    if not os.path.isdir('./checkpoints'):
+        print('The directory for checkpoints doesnt exist creating one at ./checkpoints ')
+        os.makedirs('./checkpoints')
+    else:
+        print('The directory already exists skipping the folder creation step')
+
+
 
     # the hyperparameters
     if args.seed is not None:
@@ -298,8 +305,9 @@ if __name__ == '__main__':
         
         ## Do we need to load best model??? YES
         if args.save:
-            print(f'Loading the best model params from : {args.model_name}')
-            model.load_state_dict(torch.load(args.model_name))
+            load_path = os.path.join('./checkpoints', args.model_name)
+            print(f'Loading the best model params from : {load_path}')
+            model.load_state_dict(torch.load(load_path))
         # for that update later
         
         normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
