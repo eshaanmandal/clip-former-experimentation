@@ -46,7 +46,7 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
 
             # removing the useless dimesnion
             a_pred, n_pred = a_pred.squeeze(-1), n_pred.squeeze(-1)
-            a_pred, n_pred = a_pred[0], n_pred[0] # taking only the tensor 
+        
 
             # Lets start with video that are normal
 
@@ -64,8 +64,7 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
             anomalous_part = a_pred[:topk]
             normal_part = a_pred[topk:]
 
-            print(anomalous_part, normal_part)
-            print(type(anomalous_part), type(normal_part))
+            anomalous_part, normal_part = anomalous_part[0], normal_part[0]
 
             # bce for normal part
             bce_normal_part = F.binary_cross_entropy(normal_part, torch.zeros_like(normal_part))
