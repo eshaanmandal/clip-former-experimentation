@@ -206,7 +206,7 @@ def train_once(
 
 def predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data = 0.1, frames=3000):
     
-    print(f'Getting prediction on unlabelled dataset:')
+    # print(f'Getting prediction on unlabelled dataset:')
     model.eval() # Sets the model to eval mode
     predicted_gts = []  #list of predicted video level labels for all unlabelled videos
 
@@ -368,6 +368,7 @@ if __name__ == '__main__':
             model.load_state_dict(torch.load(load_path))
         # for that update later
         
+        print(f'Getting prediction on unlabelled dataset:')
         normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
         
         

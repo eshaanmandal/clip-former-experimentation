@@ -50,7 +50,7 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
             # Lets start with video that are normal
 
             ground_truth_normal = torch.zeros_like(n_pred)
-            bce_for_normal += F.binary_cross_entropy(n_pred, ground_truth_normal)
+            bce_for_normal = F.binary_cross_entropy(n_pred, ground_truth_normal)
 
             #For anomaly videos (a bit complex)
 
