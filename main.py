@@ -19,7 +19,21 @@ import argparse
 import gc
 import torchmetrics
 
-def train(epoch, model, optim, device, train_dl, batch_size):
+
+def train(
+    epoch, 
+    ssl_step, 
+    model, 
+    optim, 
+    device, 
+    train_dl, 
+    batch_size, 
+    unlabelled_dl, 
+    valid_bs, 
+    percent_data, 
+    num_feats, 
+    unlabelled_ds
+):
     '''
         Method for training the CLIP-ANOMALY-DETECTION Model
 
@@ -41,7 +55,12 @@ def train(epoch, model, optim, device, train_dl, batch_size):
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
-        loss = MIL(combined_anomaly_scores)
+        if ssl_step == 0:
+            loss = MIL(combined_anomaly_scores)
+        else:
+            indexes = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
+            loss = bce(unlabelled_ds, indexes, model, device) + MIL(combined_anomaly_scores)
+        
         running_loss += loss.item()
 
         optim.zero_grad()
@@ -134,11 +153,38 @@ def seed_everything(seed: int = 10):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, best_auc, model_name):
+def train_once(
+    train_anomaly_dl, 
+    train_normal_dl, 
+    val_dl,
+    train_bs, 
+    valid_bs, 
+    epochs, 
+    ssl_step, 
+    num_feats, 
+    best_auc, 
+    model_name, 
+    unlabelled_dl,
+    valid_bs, 
+    percent_data, 
+    num_feats,
+    unlabelled_ds
+):
     #aucs = []
 
     for epoch in range(epochs):
-        loss = train(epoch, model, optimizer, device, [train_anomaly_dl, train_normal_dl], train_bs)
+        loss = train(
+            epoch,
+            ssl_step,
+            model, 
+            optimizer, 
+            device, 
+            [train_anomaly_dl, train_normal_dl], 
+            train_bs, unlabelled_dl, valid_bs, 
+            percent_data, 
+            num_feats,
+            unlabelled_ds
+        )
         #wandb.log({"train_loss":loss})
         auc = test(epoch, model, optimizer, device, val_dl, valid_bs, num_feats)
         #aucs.append(auc)
@@ -284,17 +330,33 @@ if __name__ == '__main__':
     list_of_unlabelled_videos = os.listdir(path_to_unlabelled)
     curr_best_auc = 0.5
 
-    for epoch in range(total_epochs):
+    for ssl_step in range(total_epochs):
 
         print("################################")
-        print("SSL Step: ", epoch+1)
+        print("SSL Step: ", ssl_step+1)
         print("################################")
 
         print("Length of normal dataset: ", len(train_normal_ds))
         print("Length of anomaly dataset: ", len(train_anomaly_ds))
         print("Length of unlabelled dataset remaining: ", len(list_of_unlabelled_videos))
 
-        best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc, args.model_name)
+        best_auc, model = train_once(
+            train_anomaly_dl, 
+            train_normal_dl, 
+            val_dl, 
+            train_bs, 
+            valid_bs, 
+            epochs, 
+            ssl_step,
+            num_feats, 
+            curr_best_auc, 
+            args.model_name,
+            unlabelled_dl,
+            valid_bs, 
+            percent_data, 
+            num_feats,
+            unlabelled_ds
+        )
         print("BEST TEST AUC: ", best_auc.item())
 
         if best_auc > curr_best_auc:
