@@ -46,6 +46,7 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
 
             # removing the useless dimesnion
             a_pred, n_pred = a_pred.squeeze(-1), n_pred.squeeze(-1)
+            a_pred, n_pred = a_pred[0], n_pred[0] # taking only the tensor 
 
             # Lets start with video that are normal
 
