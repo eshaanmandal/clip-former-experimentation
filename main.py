@@ -165,7 +165,6 @@ def train_once(
     best_auc, 
     model_name, 
     unlabelled_dl,
-    valid_bs, 
     percent_data, 
     num_feats,
     unlabelled_ds
