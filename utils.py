@@ -37,7 +37,7 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
     total_len = len(indexes[0])
     a_idxs, n_idxs = indexes[0], indexes[1]
     with torch.no_grad():
-        for a, n in zip(a_idxs, n_idxs):
+        for a_idx, n_idx in zip(a_idxs, n_idxs):
             # move data to gpu/cpu
             print(dataset[a_idx])
             a_clip, n_clip = dataset[a_idx].to(device), dataset[n_idx].to(device)
