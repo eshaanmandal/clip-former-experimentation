@@ -166,7 +166,6 @@ def train_once(
     model_name, 
     unlabelled_dl,
     percent_data, 
-    num_feats,
     unlabelled_ds
 ):
     #aucs = []
@@ -353,7 +352,6 @@ if __name__ == '__main__':
             unlabelled_dl,
             valid_bs, 
             percent_data, 
-            num_feats,
             unlabelled_ds
         )
         print("BEST TEST AUC: ", best_auc.item())
