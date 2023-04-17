@@ -350,7 +350,6 @@ if __name__ == '__main__':
             curr_best_auc, 
             args.model_name,
             unlabelled_dl,
-            valid_bs, 
             percent_data, 
             unlabelled_ds
         )
