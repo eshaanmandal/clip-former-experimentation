@@ -75,26 +75,8 @@ def train(
                     / torch.numel(label_n[label_n == -2 ])
             except:
                 loss += 0
-
-        # if ssl_step != 0:
-        #     count = 1
-        #     for i in range(label_a.item()):
-        #         count = 0 
-        #         if label_a[i] == -1:
-        #             loss += bce(score_a[i], 1)
-        #             count += 1
-        
-
-        #     for i in range(label_n.item()):
-        #         count = 0 
-        #         if label_n[i] == -1:
-        #             loss += bce(score_n[i], 0)
-        #             count+=1
-        #     loss /= count
         
         running_loss += loss.item()
-
-
 
         optim.zero_grad()
         loss.backward()
@@ -228,7 +210,7 @@ def train_once(
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict':model.state_dict(),
-                    'optimizer_state_dict': optim.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
                     'auc':auc
                 }, save_path)
             best_auc = auc
