@@ -225,7 +225,12 @@ def train_once(
             save_path = os.path.join('./checkpoints',model_name)
             if args.save:
                 print(f'Saving the best model params to : {save_path}')
-                torch.save(model.state_dict(), save_path)
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict':model.state_dict(),
+                    'optimizer_state_dict': optim.state_dict(),
+                    'auc':auc
+                }, save_path)
             best_auc = auc
         print(f'Best AUC score is {best_auc}')
 
@@ -397,10 +402,13 @@ if __name__ == '__main__':
             wandb.log({"auc_per_run":curr_best_auc})
         
         ## Do we need to load best model??? YES
+        # if models are being saved load the best 
         if args.save:
             load_path = os.path.join('./checkpoints', args.model_name)
             print(f'Loading the best model params from : {load_path}')
-            model.load_state_dict(torch.load(load_path))
+            checkpoint = torch.load(load_path)
+            model.load_state_dict(checkpoint['model_state_dict'])
+
         # for that update later
         
         print(f'Getting prediction on unlabelled dataset:')
