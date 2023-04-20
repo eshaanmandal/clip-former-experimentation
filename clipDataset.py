@@ -102,10 +102,10 @@ class NormalVideo_modified(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         x = x.squeeze(0)
         # x = torch.mean(x, dim=1)
-        if 'normal' in self.base_dir.lower():
-            return x, 'L'
+        if 'normal' in path.lower():
+            return x, 0
         else:
-            return x, 'U'
+            return x, -1
     
 
 
@@ -203,10 +203,10 @@ class AnomalyVideo_modified(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         # x = torch.mean(x, dim=1)
         x = x.squeeze(0)
-        if 'anomaly' in self.base_dir.lower():
-            return x, 'L'
+        if 'anomaly' in path.lower():
+            return x, 0
         else:
-            return x, 'U'
+            return x, -1
 
 
     

@@ -55,7 +55,6 @@ def train(
         # calculating losses
         score_a, score_n = model(clip_a), model(clip_n)
 
-        # print(label_a, type(label_a))
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
@@ -64,16 +63,16 @@ def train(
 
         if ssl_step != 0:
             count = 1
-            for i in range(len(label_a)):
+            for i in range(label_a.item()):
                 count = 0 
-                if label_a[i] == 'U':
+                if label_a[i] == -1:
                     loss += bce(score_a[i], 1)
                     count += 1
         
 
-            for i in range(len(label_n)):
+            for i in range(label_n.item()):
                 count = 0 
-                if label_n[i] == 'U':
+                if label_n[i] == -1:
                     loss += bce(score_n[i], 0)
                     count+=1
             loss /= count
