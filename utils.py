@@ -110,11 +110,13 @@ def bce_new(dataset,indexes, model, device='cpu', percentage=0.5):
 
 
 def bce(score, feat_type, percentage=0.40):
+    # 0 means normal videos
     if feat_type == 0:
         ground_truth_normal = torch.zeros_like(score)
         bce_loss = F.binary_cross_entropy(score, ground_truth_normal)
         return bce_loss
 
+    # 1 means anomaly
     if feat_type == 1:
         ground_truth_anomalous = torch.zeros_like(score_a)
         topk = int(percentage * score.shape[0])

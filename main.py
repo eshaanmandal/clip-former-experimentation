@@ -18,7 +18,7 @@ import wandb
 import argparse
 import gc
 import torchmetrics
-from typing import Lis
+
 
 # these signify the labelled and unlabelled video
 LABELLED = 2
