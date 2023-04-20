@@ -42,10 +42,6 @@ def train(
     model.train() # sets the model into training mode
     print(f'Epoch {epoch+1}')
     # get the index
-
-   # if ssl_step != 0:
-    #    print('Computing BCE loss for unlabelled part')
-     #   bce_loss= bce_new(unlabelled_ds, indexes, model, device)
     
     anomaly_dl, normal_dl = train_dl[0], train_dl[1] # train_dl is a list [compactly passing the anomaly and normal clip feats dataloader]
     running_loss = 0.0
@@ -63,9 +59,17 @@ def train(
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
         loss = MIL(combined_anomaly_scores)
 
-        if ssl_step !=0:
-            loss += bce_new(unlabelled_ds, indexes, model, device)
+        print(label_a.shape)
 
+        if ssl_step != 0:
+            for i in range(label_a.item()):
+                if label_a[i] == 'U':
+                    loss += bce(clip_a[i], 1)
+            for i in range(label_n.item()):
+                if label_n[i] == 'U':
+                    loss += bce(clip_n[i], 0)
+        
+      
         running_loss += loss.item()
 
         optim.zero_grad()
@@ -308,10 +312,10 @@ if __name__ == '__main__':
 
     # dataloaders
 
-    train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True, num_workers=4)
-    train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True, num_workers=4)
+    train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True, num_workers=16)
+    train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True, num_workers=16)
 
-    val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=4)
+    val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=16)
 
     unlabelled_dl = DataLoader(unlabelled_ds, batch_size=valid_bs, shuffle=False, num_workers=16) 
 
