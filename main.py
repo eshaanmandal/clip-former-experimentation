@@ -59,17 +59,20 @@ def train(
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
         loss = MIL(combined_anomaly_scores)
 
-        print(label_a.shape)
 
         if ssl_step != 0:
+            count = 0
             for i in range(label_a.item()):
                 if label_a[i] == 'U':
-                    loss += bce(clip_a[i], 1)
+                    loss += bce(score_a[i], 1)
+                    count += 1
+
             for i in range(label_n.item()):
                 if label_n[i] == 'U':
-                    loss += bce(clip_n[i], 0)
+                    loss += bce(score_n[i], 0)
+                    count+=1
+            loss /= count
         
-      
         running_loss += loss.item()
 
         optim.zero_grad()

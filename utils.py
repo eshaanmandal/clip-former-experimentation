@@ -109,9 +109,33 @@ def bce_new(dataset,indexes, model, device='cpu', percentage=0.5):
     return total_loss / total_len
 
 
-def bce(clip_feats,feat_type, feat_type):
+def bce(score, feat_type, percentage=0.40):
     if feat_type == 0:
+        ground_truth_normal = torch.zeros_like(score)
+        bce_loss = F.binary_cross_entropy(score, ground_truth_normal)
+        return bce_loss
+
     if feat_type == 1:
+        ground_truth_anomalous = torch.zeros_like(score_a)
+        topk = int(percentage * score.shape[0])
+        rest = score_a.shape[1] - topk
+
+        score = torch.sort(score, descending=True)[0]
+
+        a_part = score[:topk]
+        n_part = score[topk:]
+
+        bce_normal_part = F.binary_cross_entropy(n_part, torch.zeros_like(n_part))
+
+        bce_anomalous_part = F.binary_cross_entropy(a_part, torch.ones_like(a_part))
+
+        bce_loss = (bce_anomalous_part/topk) + (bce_normal_part / rest)
+        return bce_loss
+
+
+
+
+
 
             
 
