@@ -64,12 +64,12 @@ def train(
 
         if ssl_step != 0:
             count = 0
-            for i in range(label_a.item()):
+            for i in range(len(label_a)):
                 if label_a[i] == 'U':
                     loss += bce(score_a[i], 1)
                     count += 1
 
-            for i in range(label_n.item()):
+            for i in range(len(label_n)):
                 if label_n[i] == 'U':
                     loss += bce(score_n[i], 0)
                     count+=1
