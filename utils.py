@@ -1,6 +1,9 @@
 import torch
 import torch.nn.functional as F
-
+from torch.utils.data import DataLoader, SubsetRandomSampler
+from tqdm import tqdm
+import time
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 # MIL loss function
 # ***Version - 1 ****
@@ -32,6 +35,80 @@ def MIL(combined_anomaly_scores):
     #    loss += F.relu(1 - abnormal_score + normal_score)
     #return loss / batch_size
 
+def bce_new(dataset,indexes, model, device='cpu', percentage=0.1):
+    # start = time.time()
+    model.eval()
+    total_loss = 0.0
+    total_len = len(indexes[0])
+    a_idxs, n_idxs = indexes[0], indexes[1]
+
+    # making a custom subset sampler
+    anomaly_sampler = SubsetRandomSampler(a_idxs)
+    normal_sampler = SubsetRandomSampler(n_idxs)
+
+    print(len(a_idxs), len(n_idxs))
+
+    # Defining a dataloader
+    a_dl = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=16, sampler=anomaly_sampler)
+    n_dl = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=16, sampler=normal_sampler)
+
+    with torch.no_grad():
+        for anomaly, normal in zip(a_dl,n_dl):
+            clip_a, clip_n = anomaly[0], normal[0]
+
+            # moving the dataset to device
+            clip_a, clip_n = clip_a.to(device), clip_n.to(device)
+
+            #get some predictions
+            score_a, score_n = model(clip_a), model(clip_n)
+
+            # getting rid of the last dims
+            score_a, score_n = score_a.squeeze(-1), score_n.squeeze(-1)
+
+            # starting with pure normal videos 
+            ground_truth_normal = torch.zeros_like(score_n)
+            bce_for_normal = F.binary_cross_entropy(score_n, ground_truth_normal)
+
+
+            # Now move to anomalous video
+            # the case is bit complicated here
+            # print(score_a.shape) # betting its batch size, feats
+
+            ground_truth_anomalous = torch.zeros_like(score_a)
+            
+            topk = int(percentage * score_a.shape[1])
+            rest = score_a.shape[1] - topk
+
+            score_a = torch.sort(score_a, dim=1, descending=True)[0]
+
+            a_part = score_a[:,:topk]
+            n_part = score_n[:, topk:]
+
+            # BCE for the normal part
+            bce_normal_part = F.binary_cross_entropy(n_part, torch.zeros_like(n_part))
+
+            # BCE for anomalous part
+            bce_anomalous_part = F.binary_cross_entropy(a_part, torch.ones_like(a_part))
+
+            # computing the coeff
+            #k = bce_anomalous_part / (bce_normal_part + 1e-3)
+
+            # normalizing the scores
+            #bce_normal_part *= k
+            bce_for_anomalous = (bce_anomalous_part/topk) + (bce_normal_part / rest)
+            # bce_for_anomalous = F.binary_cross_entropy(score_a, ground_truth_anomalous)
+            total_loss += (bce_for_anomalous + bce_for_normal)
+
+    # end = time.time()
+    # print(f'It took {end - start} s')
+
+    return total_loss / total_len
+            
+
+
+
+            
+
 def bce(dataset, indexes, model, device='cpu',percent=0.1):
     total_loss = 0.0
     total_len = len(indexes[0])
@@ -39,11 +116,11 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
     with torch.no_grad():
         for a_idx, n_idx in zip(a_idxs, n_idxs):
             # move data to gpu/cpu
-            a_clip, n_clip = dataset[a_idx][0].to(device), dataset[n_idx][0].to(device)
 
+            a_clip, n_clip = dataset[a_idx][0].to(device), dataset[n_idx][0].to(device)
             # get predections
             a_pred, n_pred = model(a_clip), model(n_clip)
-
+    
             # removing the useless dimesnion
             a_pred, n_pred = a_pred.squeeze(-1), n_pred.squeeze(-1)
         
@@ -59,12 +136,10 @@ def bce(dataset, indexes, model, device='cpu',percent=0.1):
             topk = int(percent * a_pred.shape[0])
 
             # sorting the tensor
-            a_pred = torch.sort(a_pred, descending=True)
+            a_pred = torch.sort(a_pred, descending=True)[0]
 
             anomalous_part = a_pred[:topk]
             normal_part = a_pred[topk:]
-
-            anomalous_part, normal_part = anomalous_part[0], normal_part[0]
 
             # bce for normal part
             bce_normal_part = F.binary_cross_entropy(normal_part, torch.zeros_like(normal_part))

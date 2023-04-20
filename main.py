@@ -32,7 +32,8 @@ def train(
     valid_bs, 
     percent_data, 
     num_feats, 
-    unlabelled_ds
+    unlabelled_ds, 
+    indexes
 ):
     '''
         Method for training the CLIP-ANOMALY-DETECTION Model
@@ -40,7 +41,12 @@ def train(
     '''
     model.train() # sets the model into training mode
     print(f'Epoch {epoch+1}')
+    # get the index
 
+   # if ssl_step != 0:
+    #    print('Computing BCE loss for unlabelled part')
+     #   bce_loss= bce_new(unlabelled_ds, indexes, model, device)
+    
     anomaly_dl, normal_dl = train_dl[0], train_dl[1] # train_dl is a list [compactly passing the anomaly and normal clip feats dataloader]
     running_loss = 0.0
     l = min(len(anomaly_dl), len(normal_dl)) # simply means len(either dataloader) because same length for both
@@ -55,18 +61,16 @@ def train(
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
-        if ssl_step == 0:
-            loss = MIL(combined_anomaly_scores)
-        else:
-            indexes = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
-            loss = bce(unlabelled_ds, indexes, model, device) + MIL(combined_anomaly_scores)
-        
+        loss = MIL(combined_anomaly_scores)
+
+        if ssl_step !=0:
+            loss += bce_new(unlabelled_ds, indexes, model, device)
+
         running_loss += loss.item()
 
         optim.zero_grad()
         loss.backward()
         optim.step()
-
 
     print('train loss = {}'.format(running_loss/l))
     del anomaly_dl, normal_dl, clip_a, clip_n, score_a, score_n
@@ -166,7 +170,8 @@ def train_once(
     model_name, 
     unlabelled_dl,
     percent_data, 
-    unlabelled_ds
+    unlabelled_ds,
+    indexes
 ):
     #aucs = []
 
@@ -181,7 +186,8 @@ def train_once(
             train_bs, unlabelled_dl, valid_bs, 
             percent_data, 
             num_feats,
-            unlabelled_ds
+            unlabelled_ds,
+            indexes
         )
         #wandb.log({"train_loss":loss})
         auc = test(epoch, model, optimizer, device, val_dl, valid_bs, num_feats)
@@ -228,7 +234,7 @@ def predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data =
     normal_idx = [sorted_idx[i] for i in range(num_vids)]
     anomaly_idx = [sorted_idx[-i-1] for i in range(num_vids)]
 
-
+    # print(len(normal_idx), len(anomaly_idx))
     return normal_idx, anomaly_idx
 
 
@@ -302,10 +308,10 @@ if __name__ == '__main__':
 
     # dataloaders
 
-    train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True, num_workers=16)
-    train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True, num_workers=16)
+    train_anomaly_dl = DataLoader(train_anomaly_ds, batch_size=train_bs, shuffle=True, num_workers=4)
+    train_normal_dl = DataLoader(train_normal_ds, batch_size=train_bs, shuffle=True, num_workers=4)
 
-    val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=16)
+    val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=4)
 
     unlabelled_dl = DataLoader(unlabelled_ds, batch_size=valid_bs, shuffle=False, num_workers=16) 
 
@@ -327,7 +333,7 @@ if __name__ == '__main__':
     
     list_of_unlabelled_videos = os.listdir(path_to_unlabelled)
     curr_best_auc = 0.5
-
+    indexes=None
     for ssl_step in range(total_epochs):
 
         print("################################")
@@ -351,7 +357,8 @@ if __name__ == '__main__':
             args.model_name,
             unlabelled_dl,
             percent_data, 
-            unlabelled_ds
+            unlabelled_ds,
+            indexes
         )
         print("BEST TEST AUC: ", best_auc.item())
 
@@ -369,8 +376,8 @@ if __name__ == '__main__':
         # for that update later
         
         print(f'Getting prediction on unlabelled dataset:')
-        normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
-        
+        normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data/2, num_feats)
+        indexes = [anomaly_idx, normal_idx]
         
         ######
         """
