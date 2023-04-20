@@ -18,22 +18,26 @@ import wandb
 import argparse
 import gc
 import torchmetrics
+from typing import Lis
 
+# these signify the labelled and unlabelled video
+LABELLED = 2
+UNLABELLED = -2 
 
 def train(
-    epoch, 
-    ssl_step, 
-    model, 
-    optim, 
-    device, 
-    train_dl, 
-    batch_size, 
-    unlabelled_dl, 
-    valid_bs, 
-    percent_data, 
-    num_feats, 
-    unlabelled_ds, 
-    indexes
+        epoch, 
+        ssl_step, 
+        model, 
+        optim, 
+        device, 
+        train_dl, 
+        batch_size, 
+        unlabelled_dl, 
+        valid_bs, 
+        percent_data, 
+        num_feats, 
+        unlabelled_ds, 
+        indexes
 ):
     '''
         Method for training the CLIP-ANOMALY-DETECTION Model
@@ -60,24 +64,37 @@ def train(
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
         loss = MIL(combined_anomaly_scores)
 
-
         if ssl_step != 0:
-            count = 1
-            for i in range(label_a.item()):
-                count = 0 
-                if label_a[i] == -1:
-                    loss += bce(score_a[i], 1)
-                    count += 1
+            try:
+                loss += sum([bce(score_a[i], 1) for i in range(label_a.item()) if label_a[i] == -2]) \
+                    / torch.numel(label_a[label_a == -2])
+            except:
+                loss += 0 
+            try:
+                loss += sum([bce(score_n[i], 0) for i in range(label_n.item()) if label_n[i] == -2]) \
+                    / torch.numel(label_n[label_n == -2 ])
+            except:
+                loss += 0
+
+        # if ssl_step != 0:
+        #     count = 1
+        #     for i in range(label_a.item()):
+        #         count = 0 
+        #         if label_a[i] == -1:
+        #             loss += bce(score_a[i], 1)
+        #             count += 1
         
 
-            for i in range(label_n.item()):
-                count = 0 
-                if label_n[i] == -1:
-                    loss += bce(score_n[i], 0)
-                    count+=1
-            loss /= count
+        #     for i in range(label_n.item()):
+        #         count = 0 
+        #         if label_n[i] == -1:
+        #             loss += bce(score_n[i], 0)
+        #             count+=1
+        #     loss /= count
         
         running_loss += loss.item()
+
+
 
         optim.zero_grad()
         loss.backward()

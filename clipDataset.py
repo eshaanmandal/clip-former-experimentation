@@ -47,7 +47,8 @@ class NormalVideo(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         x = x.squeeze(0)
         # x = torch.mean(x, dim=1)
-        return x, 0
+        # 2 means labelled
+        return x, 2
     
 
 
@@ -102,10 +103,11 @@ class NormalVideo_modified(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         x = x.squeeze(0)
         # x = torch.mean(x, dim=1)
+        # -2 means unlabelled
         if 'normal' in path.lower():
-            return x, 0
+            return x, 2
         else:
-            return x, -1
+            return x, -2
     
 
 
@@ -147,7 +149,7 @@ class AnomalyVideo(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         # x = torch.mean(x, dim=1)
         x = x.squeeze(0)
-        return x, 1
+        return x, 2
 
 
 
@@ -204,9 +206,9 @@ class AnomalyVideo_modified(Dataset):
         # x = torch.mean(x, dim=1)
         x = x.squeeze(0)
         if 'anomaly' in path.lower():
-            return x, 0
+            return x, 2
         else:
-            return x, -1
+            return x, -2
 
 
     
