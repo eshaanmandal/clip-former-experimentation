@@ -54,6 +54,8 @@ def train(
 
         # calculating losses
         score_a, score_n = model(clip_a), model(clip_n)
+
+        print(label_a, type(label_a))
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
