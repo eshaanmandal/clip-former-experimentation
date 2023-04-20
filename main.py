@@ -63,7 +63,7 @@ def train(
 
 
         if ssl_step != 0:
-            count = 0
+            count = 1
             for i in range(len(label_a)):
                 if label_a[i] == 'U':
                     loss += bce(score_a[i], 1)
