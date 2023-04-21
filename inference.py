@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from models import CLIPFormer
 from torch.utils.data import DataLoader
+from clipDataset import *
 
 # load model and do some inference
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
