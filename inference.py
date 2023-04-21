@@ -41,8 +41,8 @@ def infer(data):
                 clip_a, _ = anomaly
                 clip_n, _ = normal
 
-                gt_a = [1 for _ in clip_a.shape[0]]
-                gt_n = [0 for _ in clip_n.shape[1]]
+                gt_a = [1 for _ in range(clip_a.shape[0])]
+                gt_n = [0 for _ in range(clip_n.shape[1])]
 
                 gts.extend(gt_a)
                 gts.extend(gt_n)
