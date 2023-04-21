@@ -10,7 +10,7 @@ device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_feats = 64
 path_to_anomaly = '../Anomaly'
 path_to_normal = './Normal'
-checkpoint = torch.load('best_ssl_bce.pth')
+checkpoint = torch.load('./checkpoints/best_ssl_bce.pth')
 model = CLIPFormer(num_layers=1, nhead=4).to(device)
 model.load_state_dict(checkpoint['model_state_dict'])
 # training data
