@@ -68,7 +68,10 @@ def infer(data):
         gts = []
         with torch.no_grad():
             for clip_fts, _, video_gt in tqdm(val_dl):
-                gts.extend(video_gt)
+                if len(video_gt) == 1:
+                    gts.append(0)
+                else:
+                    gts.append(1)
                 clip_fts = clip_fts.to(device)
 
                 scores = model(clip_fts)
@@ -81,7 +84,7 @@ def infer(data):
 
                 preds.extend(pred)
 
-        return preds
+        return gts, preds
 
 
 
@@ -93,6 +96,7 @@ def infer(data):
 
 
 gts, preds = infer(data='valid')
+print(len(gts), len(preds))
 plt.figure()
 plt.hist(gts, alpha=0.5, label="Ground truth")
 plt.hist(preds, alpha=0.5, label="Predictions")
@@ -101,7 +105,7 @@ plt.title('Validation set preds')
 plt.xlabel('Scores')
 plt.grid()
 plt.ylabel('Frequency')
-plt.savefig('figure.png')
+plt.savefig('figure#1.png')
 
 
             
