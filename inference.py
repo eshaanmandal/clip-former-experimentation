@@ -94,8 +94,9 @@ def infer(data):
 gts, preds = infer(data='train')
 
 plt.figure()
-plt.hist(gts, bins=100, alpha=0.5, label="Ground truth")
-plt.hist(preds, bins=100, alpha=0.5, label="Predictions")
+plt.hist(gts, alpha=0.5, label="Ground truth")
+plt.hist(preds, alpha=0.5, label="Predictions")
+plt.legend(['Ground truth', 'Predictions'])
 plt.title('Training set preds')
 plt.xlabel('Scores')
 plt.ylabel('Frequency')
