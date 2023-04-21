@@ -34,15 +34,18 @@ def infer(data):
 
     if data == 'train':
         print('Performing evaluation on the model')
-        # gts = []
+        gts = []
         preds = []
         with torch.no_grad():
             for anomaly, normal in tqdm(zip(train_a_dl, train_n_dl), total=min(len(train_a_dl), len(train_n_dl))):
                 clip_a, _ = anomaly
                 clip_n, _ = normal
 
-                # gt_a = [1 for _ in clip_a.shape[0]]
-                # gt_n = [0 for _ in clip_n.shape[1]]
+                gt_a = [1 for _ in clip_a.shape[0]]
+                gt_n = [0 for _ in clip_n.shape[1]]
+
+                gts.extend(gt_a)
+                gts.extend(gt_n)
 
                 # pass data to device
                 clip_a, clip_n = clip_a.to(device), clip_n.to(device)
@@ -59,7 +62,7 @@ def infer(data):
 
                 preds.extend(combined_pred)
 
-        return preds
+        return gts, preds
 
     elif data == 'valid':
         preds = []
@@ -88,10 +91,11 @@ def infer(data):
 
 
 
-preds = infer(data='valid')
+gts, preds = infer(data='train')
 
 plt.figure()
-plt.hist(preds)
+plt.hist(gts, bins=100, alpha=0.5, label="Ground truth")
+plt.hist(preds, bins=100, alpha=0.5, label="Predictions")
 plt.title('Training set preds')
 plt.xlabel('Scores')
 plt.ylabel('Frequency')
