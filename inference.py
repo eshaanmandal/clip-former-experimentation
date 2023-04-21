@@ -42,10 +42,9 @@ def infer(data):
                 clip_n, _ = normal
 
                 gt_a = [1 for _ in range(clip_a.shape[0])]
-                gt_n = [0 for _ in range(clip_n.shape[1])]
+                gt_n = [0 for _ in range(clip_n.shape[0])]
 
-                gts.extend(gt_a)
-                gts.extend(gt_n)
+                gts.extend(gt_a + gt_n)
 
                 # pass data to device
                 clip_a, clip_n = clip_a.to(device), clip_n.to(device)
@@ -92,13 +91,13 @@ def infer(data):
 
 
 gts, preds = infer(data='train')
-
 plt.figure()
 plt.hist(gts, alpha=0.5, label="Ground truth")
 plt.hist(preds, alpha=0.5, label="Predictions")
 plt.legend(['Ground truth', 'Predictions'])
 plt.title('Training set preds')
 plt.xlabel('Scores')
+plt.grid()
 plt.ylabel('Frequency')
 plt.savefig('figure.png')
 
