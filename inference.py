@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from models import CLIPFormer
 from torch.utils.data import DataLoader
 from clipDataset import *
+from tqdm import tqdm
 
 # load model and do some inference
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -17,8 +18,8 @@ model.load_state_dict(checkpoint['model_state_dict'])
 train_anomaly_ds = AnomalyVideo(path_to_anomaly, num_feats)
 train_normal_ds = NormalVideo(path_to_normal, num_feats)
 
-train_a_dl = DataLoader(train_anomaly_ds, batch_size=1, num_workers=16)
-train_n_dl = DataLoader(train_normal_ds, batch_size=1, num_workers=16)
+train_a_dl = DataLoader(train_anomaly_ds, batch_size=32, num_workers=16)
+train_n_dl = DataLoader(train_normal_ds, batch_size=32, num_workers=16)
 
 
 # performing some inference
@@ -29,7 +30,7 @@ def infer():
     # gts = []
     preds = []
     with torch.no_grad():
-        for anomaly, normal in zip(train_a_dl, train_n_dl):
+        for anomaly, normal in tqdm(zip(train_a_dl, train_n_dl), total=min(len(train_a_dl), len(train_n_dl))):
             clip_a, _ = anomaly
             clip_n, _ = normal
 
@@ -45,7 +46,7 @@ def infer():
 
             pred_a, pred_n = torch.max(score_a, dim=1)[0], torch.max(score_n, dim=1)[0]
 
-            combined_pred = torch.cat(pred_a, pred_n)
+            combined_pred = torch.cat((pred_a, pred_n))
 
             combined_pred = combined_pred.cpu().detach().numpy()
 
@@ -58,6 +59,9 @@ preds = infer()
 
 plt.figure()
 plt.hist(preds)
+plt.title('Training set preds')
+plt.xlabel('Scores')
+plt.ylabel('Frequency')
 plt.savefig('figure.png')
 
 
