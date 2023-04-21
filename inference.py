@@ -57,7 +57,7 @@ preds = infer()
 
 plt.figure()
 plt.hist(preds)
-plt.show()
+plt.savefig('figure.png')
 
 
             
