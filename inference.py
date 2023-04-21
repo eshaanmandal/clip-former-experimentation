@@ -26,7 +26,7 @@ train_n_dl = DataLoader(train_normal_ds, batch_size=32, num_workers=16, shuffle=
 
 # validation data
 valid_ds = ValidationVideo(path_to_val, num_feats)
-val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=16)
+val_dl = DataLoader(valid_ds, batch_size=1, shuffle=True, num_workers=16)
 
 # performing some inference
 def infer(data):
