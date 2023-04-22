@@ -96,7 +96,7 @@ def infer(data):
 
 
 
-gts, preds = infer(data='valid')
+gts, preds = infer(data='train')
 print(len(gts), len(preds))
 sn.kdeplot(x=preds)
 plt.savefig('figure#1.png')
