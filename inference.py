@@ -98,9 +98,9 @@ def infer(data):
 
 gts, preds = infer(data='train')
 print(len(gts), len(preds))
-
+preds = {"x": preds}
 plt.figure()
-fig = sn.kdeplot(preds, clip=(-2,2))
+fig = sn.kdeplot(preds, key='x')
 plt.yticks(fig.get_yticks(), fig.get_yticks() * 100)
 plt.savefig('figure#1.png')
 
