@@ -100,7 +100,7 @@ gts, preds = infer(data='train')
 print(len(gts), len(preds))
 
 plt.figure()
-fig = sn.kdeplot(preds, clip=(0,1))
+fig = sn.kdeplot(preds, clip=(-2,2))
 plt.yticks(fig.get_yticks(), fig.get_yticks() * 100)
 plt.savefig('figure#1.png')
 
