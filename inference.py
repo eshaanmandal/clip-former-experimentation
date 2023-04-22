@@ -5,6 +5,7 @@ from models import CLIPFormer
 from torch.utils.data import DataLoader
 from clipDataset import *
 from tqdm import tqdm
+import seaborn as sn
 
 # load model and do some inference
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -97,14 +98,7 @@ def infer(data):
 
 gts, preds = infer(data='valid')
 print(len(gts), len(preds))
-plt.figure()
-plt.hist(gts, alpha=0.5, label="Ground truth")
-plt.hist(preds, alpha=0.5, label="Predictions")
-plt.legend(['Ground truth', 'Predictions'])
-plt.title('Validation set preds')
-plt.xlabel('Scores')
-plt.grid()
-plt.ylabel('Frequency')
+sn.kdeplot(x=preds)
 plt.savefig('figure#1.png')
 
 
