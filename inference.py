@@ -98,6 +98,8 @@ def infer(data):
 
 gts, preds = infer(data='train')
 print(len(gts), len(preds))
+
+plt.figure()
 sn.kdeplot(preds)
 plt.xticks(np.linspace(0,1,10))
 plt.yticks(fig.get_yticks(), fig.get_yticks() * 100)
