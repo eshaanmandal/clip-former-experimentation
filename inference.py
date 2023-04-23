@@ -114,9 +114,10 @@ print(len(gts), len(preds))
 plt.figure()
 # plt.hist(preds, alpha=0.5, color='blue')
 # plt.hist(gts, alpha=0.5, color='green')
-sn.histplot(np.array(gts), kde=True)
-sn.histplot(np.array(preds), kde=True)
-# plt.legend(["Predicted", "Ground truth"])
+plt.hist(preds, histtype='step', color='blue')
+plt.hist(gts, histtype='step', color='green')
+
+plt.legend(["Predicted", "Ground truth"])
 
 plt.savefig('figure#1.png')
 
