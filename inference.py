@@ -127,7 +127,7 @@ plt.grid()
 
 plt.legend(["Predicted(Eshaan)", "Ground truth(Eshaan)", "Predicted(Jash)", "Ground truth(Jash)"])
 
-plt.savefig('figure#1.png', dpi=1200)
+plt.savefig('figure.png', dpi=1200)
 
 
             
