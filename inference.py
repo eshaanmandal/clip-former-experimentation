@@ -108,11 +108,12 @@ def infer(data, frames=3000):
 
 
 
-gts, preds = infer(data='train')
+gts, preds = infer(data='valid', frames=num_feats)
 print(len(gts), len(preds))
 
 plt.figure()
-plt.hist(preds, alpha=0.5)
+plt.hist(preds, alpha=0.5, color='blue')
+plt.hist(gts, alpha=0.5, color='green')
 
 plt.savefig('figure#1.png')
 
