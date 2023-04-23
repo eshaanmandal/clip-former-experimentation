@@ -121,7 +121,7 @@ plt.grid()
 
 plt.legend(["Predicted", "Ground truth"])
 
-plt.savefig('figure#1.png', dpi=1200)
+plt.savefig('figure#1.png', dpi=2400)
 
 
             
