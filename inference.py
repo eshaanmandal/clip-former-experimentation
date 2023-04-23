@@ -30,7 +30,7 @@ valid_ds = ValidationVideo(path_to_val, num_feats)
 val_dl = DataLoader(valid_ds, batch_size=1, shuffle=True, num_workers=16)
 
 # performing some inference
-def infer(data):
+def infer(data, frames=3000):
     model.eval()
 
     if data == 'train':
@@ -65,31 +65,43 @@ def infer(data):
         return gts, preds
 
     elif data == 'valid':
-        preds = []
-        gts = []
+        all_gts = []
+        all_scores = []
+
         with torch.no_grad():
-            for clip_fts, _, video_gt in tqdm(val_dl):
-                if len(video_gt) == 1:
-                    gts.append(0)
-                else:
-                    gts.append(1)
-                clip_fts = clip_fts.to(device)
-
+            for clip_fts, num_frames, video_gt in tqdm(val_dl):
+                clip_fts, num_frames = clip_fts.to(device), num_frames.item()
+                # calculating anomaly scores
                 scores = model(clip_fts)
+                scores = scores.squeeze(0).squeeze(-1) # scores dimension = (frames) 
+                scores = scores.cpu().detach().numpy()  # transfer data to cpu to detach extra things in tensor and make it a numpy array  
 
-                scores = scores.squeeze(-1)
+                
+                if num_frames > frames:
+                    scores = [score for score in scores for _ in range(num_frames//frames)]
+                    all_scores.extend(scores)
+            
+                last_score = scores[-1]
+                remainder = num_frames % frames
+                
+                if remainder != 0:
+                    all_scores.extend(last_score for _ in range(remainder))
+                
+                # Now turn for the ground truths
 
-                pred = torch.max(scores, dim=1)[0]
+                video_gt_list = torch.zeros(num_frames)
 
-                pred = pred.cpu().detach().numpy()
-
-                preds.extend(pred)
-
-        return gts, preds
-
-
-
-
+                # for normal video the video_gts is 1 ; a string of len 1 is returned for normal videos
+                if len(video_gt) == 1:
+                    all_gts.extend(video_gt_list)
+                else:
+                    video_gt_list[video_gt[0]:video_gt[1]] = 1
+                    try:
+                        video_gt_list[video_gt[2]:video_gt[3]] = 1
+                    except:
+                        pass
+                    all_gts.extend(video_gt_list)
+        return all_gts, all_scores
 
 
 
@@ -98,10 +110,10 @@ def infer(data):
 
 gts, preds = infer(data='train')
 print(len(gts), len(preds))
-preds = {"x": preds}
+
 plt.figure()
-fig = sn.kdeplot(preds, key='x')
-plt.yticks(fig.get_yticks(), fig.get_yticks() * 100)
+plt.hist(preds, alpha=0.5)
+
 plt.savefig('figure#1.png')
 
 
