@@ -116,12 +116,12 @@ plt.figure()
 # plt.hist(gts, alpha=0.5, color='green')
 plt.hist(preds, histtype='step', color='blue')
 plt.hist(gts, histtype='step', color='green')
-plt.yticks(np.arange(0, 1e6, 10000))
+# plt.yticks(np.arange(0, 1e6, 100000))
 plt.grid()
 
 plt.legend(["Predicted", "Ground truth"])
 
-plt.savefig('figure#1.png')
+plt.savefig('figure#1.png', dpi=1200)
 
 
             
