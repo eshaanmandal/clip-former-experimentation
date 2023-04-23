@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from clipDataset import *
 from tqdm import tqdm
 import seaborn as sn
+import json
 
 # load model and do some inference
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -104,8 +105,11 @@ def infer(data, frames=3000):
         return all_gts, all_scores
 
 
+with open('/local/scratch/c_adabouei/video_analysis/video_anomaly_detection/test_gt_preds.json', 'rb') as f:
+    data = json.load(f)
 
-
+j_preds = data['preds']
+j_gts = data['gt']
 
 
 gts, preds = infer(data='valid', frames=num_feats)
@@ -116,10 +120,12 @@ plt.figure()
 # plt.hist(gts, alpha=0.5, color='green')
 sn.kdeplot(np.array(preds))
 sn.kdeplot(np.array(gts))
+sn.kdeplot(np.array(j_preds))
+sn.kdeplot(np.array(j_gts))
 # plt.yticks(np.arange(0, 1e6, 100000))
 plt.grid()
 
-plt.legend(["Predicted", "Ground truth"])
+plt.legend(["Predicted(Eshaan)", "Ground truth(Eshaan)", "Predicted(Jash)", "Ground truth(Jash)"])
 
 plt.savefig('figure#1.png', dpi=1200)
 
