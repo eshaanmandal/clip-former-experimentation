@@ -118,14 +118,14 @@ print(len(gts), len(preds))
 plt.figure()
 # plt.hist(preds, alpha=0.5, color='blue')
 # plt.hist(gts, alpha=0.5, color='green')
-sn.kdeplot(np.array(preds))
 sn.kdeplot(np.array(gts))
+sn.kdeplot(np.array(preds))
 sn.kdeplot(np.array(j_preds))
-sn.kdeplot(np.array(j_gts))
+# sn.kdeplot(np.array(j_gts))
 # plt.yticks(np.arange(0, 1e6, 100000))
 plt.grid()
 
-plt.legend(["Predicted(Eshaan)", "Ground truth(Eshaan)", "Predicted(Jash)", "Ground truth(Jash)"])
+plt.legend(["Ground truth", "Predicted(Eshaan)", "Predicted(Jash)"])
 
 plt.savefig('figure.png', dpi=1200)
 
