@@ -1,6 +1,7 @@
 import torch
 from clipDataset import *
 from models import CLIPFormer
+from tqdm import tqdm
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_feats = 64
