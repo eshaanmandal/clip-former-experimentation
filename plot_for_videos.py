@@ -2,6 +2,7 @@ import torch
 from clipDataset import *
 from models import CLIPFormer
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_feats = 64
@@ -16,6 +17,8 @@ model.load_state_dict(checkpoint['model_state_dict'])
 # validation data
 valid_ds = ValidationVideo(path_to_val, num_feats)
 val_dl = DataLoader(valid_ds, batch_size=1, shuffle=True, num_workers=16)
+
+save_dir = './plots'
 
 def plot():
     model.eval()
@@ -36,7 +39,19 @@ def plot():
             if remainder != 0:
                 scores.extend([last_score for _ in range(remainder)])
 
-            print(len(scores), num_frames)
+            video_gt_list = torch.zeros(num_frames)
+
+            if len(video_gt) == 1:
+                video_gt_list = video_gt_list.cpu().detach().numpy()
+            else:
+                video_gt_list[video_gt[0]:video_gt[1]] = 1
+                try:
+                    video_gt_list[video_gt[2]:video_gt[3]] = 1
+                except:
+                    pass
+                video_gt_list = video_gt_list.cpu().detach().numpy()
+
+            print(len(scores), len(video_gt_list))
 
 plot()
 
