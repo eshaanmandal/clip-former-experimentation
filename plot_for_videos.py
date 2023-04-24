@@ -51,7 +51,12 @@ def plot():
                     pass
                 video_gt_list = video_gt_list.cpu().detach().numpy()
 
-            print(len(scores), len(video_gt_list))
+            plt.figure()
+            plt.plot(scores, label='predicted', color='green')
+            plt.plot(video_gt_list, label='ground truth', color='blue')
+
+            plt.legend(["Prediction", "Ground truth"])
+            plt.savefig(f"./plots/{i}.png", dpi=1200)
 
 plot()
 
