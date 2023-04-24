@@ -4,6 +4,7 @@ from models import CLIPFormer
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_feats = 64
+path_to_val = '..'
 
 
 checkpoint = torch.load('./checkpoints/best_ssl_bce.pth')
