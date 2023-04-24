@@ -34,7 +34,7 @@ def plot():
             remainder = num_frames % num_feats
 
             if remainder != 0:
-                scores.extend([last_score for _ in remainder])
+                scores.extend([last_score for _ in range(remainder)])
 
             print(len(scores), num_frames)
 
