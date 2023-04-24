@@ -22,7 +22,8 @@ def plot():
 
     with torch.no_grad():
         for i, (clip_fts, num_frames, video_gt) in tqdm(enumerate(val_dl)):
-            scores = model(clip_fts)
+            clip_fts, num_frames = clip_fts.to(device), num_frames.item()
+            cores = model(clip_fts)
             scores = scores.squeeze(0).squeeze(-1) # scores dimension = (frames) 
             scores = scores.cpu().detach().numpy()
 
