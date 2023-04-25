@@ -41,9 +41,10 @@ def plot():
 
             video_gt_list = torch.zeros(num_frames)
 
-            # if len(video_gt) == 1:
-            #     video_gt_list = video_gt_list.cpu().detach().numpy()
-            if len(video_gt) != 1:
+            if len(video_gt) == 1:
+                # video_gt_list = video_gt_list.cpu().detach().numpy()
+                continue
+            else:
                 video_gt_list[video_gt[0]:video_gt[1]] = 1
                 try:
                     video_gt_list[video_gt[2]:video_gt[3]] = 1
