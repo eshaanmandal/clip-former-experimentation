@@ -41,9 +41,9 @@ def plot():
 
             video_gt_list = torch.zeros(num_frames)
 
-            if len(video_gt) == 1:
-                video_gt_list = video_gt_list.cpu().detach().numpy()
-            else:
+            # if len(video_gt) == 1:
+            #     video_gt_list = video_gt_list.cpu().detach().numpy()
+            if len(video_gt) != 1:
                 video_gt_list[video_gt[0]:video_gt[1]] = 1
                 try:
                     video_gt_list[video_gt[2]:video_gt[3]] = 1
@@ -51,8 +51,7 @@ def plot():
                     pass
                 video_gt_list = video_gt_list.cpu().detach().numpy()
 
-            if len(video_gt) != 1:
-                print('Anomaly video')
+                # plotting the frames
                 plt.figure()
                 plt.plot(scores, label='predicted', color='green')
                 plt.plot(video_gt_list, label='ground truth', color='blue')
@@ -62,6 +61,8 @@ def plot():
                 plt.legend(["Prediction", "Ground truth"])
                 plt.savefig(f"./plots/{i}.png", dpi=1200)
                 plt.close()
+
+                
 
 plot()
 
