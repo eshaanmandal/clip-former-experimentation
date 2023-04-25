@@ -51,12 +51,17 @@ def plot():
                     pass
                 video_gt_list = video_gt_list.cpu().detach().numpy()
 
-            plt.figure()
-            plt.plot(scores, label='predicted', color='green')
-            plt.plot(video_gt_list, label='ground truth', color='blue')
-
-            plt.legend(["Prediction", "Ground truth"])
-            plt.savefig(f"./plots/{i}.png", dpi=1200)
+            if len(video_gt) != 1:
+                print('Anomaly video')
+                plt.figure()
+                plt.plot(scores, label='predicted', color='green')
+                plt.plot(video_gt_list, label='ground truth', color='blue')
+                plt.ylim([0, 2])
+                plt.ylabel('Score')
+                plt.xlabel('Frames')
+                plt.legend(["Prediction", "Ground truth"])
+                plt.savefig(f"./plots/{i}.png", dpi=1200)
+                plt.close()
 
 plot()
 
