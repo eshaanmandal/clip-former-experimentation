@@ -99,7 +99,7 @@ def test(epoch, model, optim, device, val_dl, batch_size, frames=3000):
     all_scores = []
 
     with torch.no_grad():
-        for clip_fts, num_frames, video_gt in tqdm(val_dl):
+        for clip_fts, num_frames, video_gt, _ in tqdm(val_dl):
             clip_fts, num_frames = clip_fts.to(device), num_frames.item()
             # calculating anomaly scores
             scores = model(clip_fts)

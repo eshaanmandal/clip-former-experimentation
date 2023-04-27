@@ -3,6 +3,7 @@ from clipDataset import *
 from models import CLIPFormer
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import pickle
 
 device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 num_feats = 64
@@ -19,12 +20,14 @@ valid_ds = ValidationVideo(path_to_val, num_feats)
 val_dl = DataLoader(valid_ds, batch_size=1, shuffle=True, num_workers=16)
 
 save_dir = './plots'
+pred_dict = {}
 
 def plot():
     model.eval()
 
     with torch.no_grad():
-        for i, (clip_fts, num_frames, video_gt) in tqdm(enumerate(val_dl)):
+        for (clip_fts, num_frames, video_gt, name) in tqdm(val_dl):
+            name = name[0]
             clip_fts, num_frames = clip_fts.to(device), num_frames.item()
             scores = model(clip_fts)
             scores = scores.squeeze(0).squeeze(-1) # scores dimension = (frames) 
@@ -53,6 +56,10 @@ def plot():
                 video_gt_list = video_gt_list.cpu().detach().numpy()
 
                 # plotting the frames
+                pred_dict[name] = scores
+
+
+
                 plt.figure()
                 plt.plot(scores, label='predicted', color='green')
                 plt.plot(video_gt_list, label='ground truth', color='blue')
@@ -60,8 +67,10 @@ def plot():
                 plt.ylabel('Score')
                 plt.xlabel('Frames')
                 plt.legend(["Prediction", "Ground truth"])
-                plt.savefig(f"./plots/{i}.png", dpi=1200)
+                plt.savefig(f"./plots/{name.split('.')[0]}.png", dpi=1200)
                 plt.close()
+    with open('predictions_on_val.pkl', 'wb') as f:
+        pickle.dump(pred_dict, f)
 
                 
 

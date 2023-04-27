@@ -253,7 +253,7 @@ class ValidationVideo(Dataset):
         # removing the batch we don't need it; it would be added by the dataloader
         x = x.squeeze(0)
 
-        return x, int(num_frames), video_gts
+        return x, int(num_frames), video_gts, name
 
 
 class UnlabelledVideo(Dataset):
