@@ -21,9 +21,9 @@ print([(key, value) for key, value in Config.items()])
 abnormal_feat_dir = r'/local/scratch/v_eshaan_mandal/Anomaly'
 normal_feat_dir = r"/local/scratch/v_eshaan_mandal/Normal"
 unlabelled_feat_dir = r"/local/scratch/c_adabouei/video_analysis/dataset/HACS_Features"
-train_split = r"anomaly_normal.txt"
-test_list_combined = r"test_complete.txt"
-save_dir =  r"/local/scratch/c_adabouei/video_analysis/dataset/HACS_Exp/save_dir"
+train_split = r"/local/scratch/c_adabouei/video_analysis/dataset/anomaly_normal.txt"
+test_list_combined = r"/local/scratch/c_adabouei/video_analysis/dataset/test_complete.txt"
+save_dir =  r"./checkpoints"
 
 import os
 import gc
