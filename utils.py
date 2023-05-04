@@ -25,7 +25,17 @@ def MIL(combined_anomaly_scores):
         y_abnormal_max = torch.max(combined_anomaly_scores[i, :])
         y_normal_max = torch.max(combined_anomaly_scores[i+offset, :]) 
         loss += F.relu(1. - y_abnormal_max + y_normal_max) 
-    return loss/offset
+    # print(torch.sum(torch.square(torch.diff(combined_anomaly_scores[0:offset, :], dim=1)))
+    consecutive_diff = torch.diff(combined_anomaly_scores[:offset, :], dim=1)
+    squared_diff = torch.square(consecutive_diff)
+    print(consecutive_diff.shape, squared_diff.shape)
+    smoothness_term = torch.sum(torch.sum(squared_diff,dim=1), dim=0)
+    sparisty_term = torch.sum(torch.sum(combined_anomaly_scores[:offset, :], dim=1), dim=0)
+
+
+    l1 = l2 = 8e-5
+
+    return (loss/offset) + l1*(smoothness_term/offset) + l2*(sparisty_term/offset)
 
 
 
