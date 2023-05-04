@@ -28,7 +28,7 @@ def MIL(combined_anomaly_scores):
     # print(torch.sum(torch.square(torch.diff(combined_anomaly_scores[0:offset, :], dim=1)))
     consecutive_diff = torch.diff(combined_anomaly_scores[:offset, :], dim=1)
     squared_diff = torch.square(consecutive_diff)
-    print(consecutive_diff.shape, squared_diff.shape)
+    # print(consecutive_diff.shape, squared_diff.shape)
     smoothness_term = torch.sum(torch.sum(squared_diff,dim=1), dim=0)
     sparisty_term = torch.sum(torch.sum(combined_anomaly_scores[:offset, :], dim=1), dim=0)
 
