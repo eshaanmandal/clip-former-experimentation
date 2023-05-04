@@ -33,7 +33,7 @@ def MIL(combined_anomaly_scores):
     sparisty_term = torch.sum(torch.sum(combined_anomaly_scores[:offset, :], dim=1), dim=0)
 
 
-    l1 = l2 = 8e-5
+    l1 = l2 = 1
 
     return (loss/offset) + l1*(smoothness_term/offset) + l2*(sparisty_term/offset)
 
