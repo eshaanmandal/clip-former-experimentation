@@ -48,9 +48,9 @@ def bce(score, feat_type, percentage=0.40):
 
     # 1 means anomaly
     if feat_type == 1:
-        ground_truth_anomalous = torch.zeros_like(score_a)
+        ground_truth_anomalous = torch.zeros_like(score)
         topk = int(percentage * score.shape[0])
-        rest = score_a.shape[1] - topk
+        rest = score.shape[1] - topk
 
         score = torch.sort(score, descending=True)[0]
 
