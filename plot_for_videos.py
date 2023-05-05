@@ -4,13 +4,22 @@ from models import CLIPFormer
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import pickle
+import argparse
 
-device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
-num_feats = 64
-path_to_val = '..'
+parser = argparse.ArgumentParser(description='Help in getting validation plot')
+parser.add_argument('--device', type=str, default='cuda:0', help='Device to use')
+parser.add_argument('--feat', type=int, default=64. help='No. feats used by the encoder')
+parser.add_argument('--val_path', type=str, default='..', help='Path to validation set')
+parser.add_argument('--checkpoint', type=str, default='./checkpoints/best_ssl_bce.pth', help='Model checkpoint to use')
+parser.add_argument('--save_dir', type=str, default='./plots', help='Where to save the plots')
+args = parser.parse_args()
+
+device = args.device
+num_feats = args.feat
+path_to_val = args.val_path
 
 
-checkpoint = torch.load('./checkpoints/best_ssl_bce.pth')
+checkpoint = torch.load(args.checkpoint)
 model = CLIPFormer(num_layers=1, nhead=4).to(device)
 model.load_state_dict(checkpoint['model_state_dict'])
 
@@ -19,7 +28,13 @@ model.load_state_dict(checkpoint['model_state_dict'])
 valid_ds = ValidationVideo(path_to_val, num_feats)
 val_dl = DataLoader(valid_ds, batch_size=1, shuffle=True, num_workers=16)
 
-save_dir = './plots'
+if not os.path.isdir(args.save_dir):
+    print('Creating dir')
+    os.makedirs(args.save_dir)
+else:
+    print('Directory already exists skipping dir creation')
+
+save_dir = args.save_dir
 pred_dict = {}
 
 def plot():
