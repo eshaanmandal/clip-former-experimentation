@@ -8,7 +8,7 @@ import argparse
 
 parser = argparse.ArgumentParser(description='Help in getting validation plot')
 parser.add_argument('--device', type=str, default='cuda:0', help='Device to use')
-parser.add_argument('--feat', type=int, default=64. help='No. feats used by the encoder')
+parser.add_argument('--feat', type=int, default=64, help='No. feats used by the encoder')
 parser.add_argument('--val_path', type=str, default='..', help='Path to validation set')
 parser.add_argument('--checkpoint', type=str, default='./checkpoints/best_ssl_bce.pth', help='Model checkpoint to use')
 parser.add_argument('--save_dir', type=str, default='./plots', help='Where to save the plots')
