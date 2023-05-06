@@ -39,7 +39,7 @@ def MIL(combined_anomaly_scores):
 
 
 
-def bce(score, feat_type, percentage=0.40):
+def bce(score, feat_type, percentage=0.02):
     # 0 means normal videos
     if feat_type == 0:
         ground_truth_normal = torch.zeros_like(score)
