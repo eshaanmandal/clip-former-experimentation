@@ -40,12 +40,10 @@ def MIL(combined_anomaly_scores):
 
 
 def bce(score, feat_type, percentage=0.02):
-    print('Hi')
     # 0 means normal videos
     if feat_type == 0:
         ground_truth_normal = torch.zeros_like(score)
         bce_loss = F.binary_cross_entropy(score, ground_truth_normal)
-        print('Normal', bce_loss)
         return bce_loss
 
     # 1 means anomaly
@@ -58,14 +56,12 @@ def bce(score, feat_type, percentage=0.02):
 
         a_part = score[:topk]
         n_part = score[topk:]
-        print(a_part, n_part)
 
         bce_normal_part = F.binary_cross_entropy(n_part, torch.zeros_like(n_part))
 
         bce_anomalous_part = F.binary_cross_entropy(a_part, torch.ones_like(a_part))
 
         bce_loss = (bce_anomalous_part/topk) + (bce_normal_part / rest)
-        print('Anomalous part', bce_loss)
         return bce_loss
 
 
