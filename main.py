@@ -59,6 +59,7 @@ def train(
 
         # calculating losses
         score_a, score_n = model(clip_a), model(clip_n)
+        print(label_a, label_n)
 
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
@@ -67,14 +68,19 @@ def train(
 
         if ssl_step != 0:
             try:
+                print( torch.numel(label_a[label_a == -2]))
+                print(len([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]))
                 loss += sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
                     / torch.numel(label_a[label_a == -2])
+                print('Hi')
             except:
+                print('No unlabelled anomalous video')
                 loss += 0 
             try:
                 loss += sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
                     / torch.numel(label_n[label_n == -2 ])
             except:
+                print('No ul normal part')
                 loss += 0
         
         running_loss += loss.item()
