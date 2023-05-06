@@ -23,6 +23,7 @@ import torchmetrics
 # these signify the labelled and unlabelled video
 LABELLED = 2
 UNLABELLED = -2 
+a_frac = 0.05
 
 def train(
         epoch, 
@@ -66,12 +67,12 @@ def train(
 
         if ssl_step != 0:
             try:
-                loss += sum([bce(score_a[i], 1) for i in range(label_a.item()) if label_a[i] == -2]) \
+                loss += sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
                     / torch.numel(label_a[label_a == -2])
             except:
                 loss += 0 
             try:
-                loss += sum([bce(score_n[i], 0) for i in range(label_n.item()) if label_n[i] == -2]) \
+                loss += sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
                     / torch.numel(label_n[label_n == -2 ])
             except:
                 loss += 0
@@ -103,38 +104,29 @@ def test(epoch, model, optim, device, val_dl, batch_size, frames=3000):
             clip_fts, num_frames = clip_fts.to(device), num_frames.item()
             # calculating anomaly scores
             scores = model(clip_fts)
-            scores = scores.squeeze(0).squeeze(-1) # scores dimension = (frames) 
-            scores = scores.cpu().detach().numpy()  # transfer data to cpu to detach extra things in tensor and make it a numpy array  
 
-            '''
-                The important part
+            if num_frames != frames:
+                scores = torch.permute(scores, (0, 2, 1)).unsqueeze(-1)
+                scores = F.interpolate(scores, size=(num_frames, 1), mode='bilinear')
+                scores = scores.squeeze(0).squeeze(0).squeeze(-1)
 
-                Since, we have to make framewise prediction but, we our clip features is working on a reduced number of frames 
-                (3000 for e.g.). What we need to do is extend the features so as to make it equal to the number of features. 
-
-                Case 1:
-                lets say we have a prediction sequence of 3000 but 9600 frames (of the video on which we are trying to make preds)
-
-                So our 3000 feats have to fit 9600 frames
-
-                Therefore, we repeat each feature 9600 //  3000 = 3 ; we repeat each feature 3 time and for the remainder we extend the
-                scores[-1] the last prediction (of the 3000 frames)
-
-                Case 2: if the number of frames is less is number than the predicted features
-
-                Just fill the prediction with the last score of (3000 preds) [times the number of frames]
-                lets day we have 100 frames so, we take scores[-1] (lets say 0.6) and make an array [0.6, 0.6, 0.6, ..... 0.6] (len 100)
-                 
-            '''
-            if num_frames > frames:
-                scores = [score for score in scores for _ in range(num_frames//frames)]
-                all_scores.extend(scores)
+            else:
+                scores = scores.squeeze(0).squeeze(-1)
          
-            last_score = scores[-1]
-            remainder = num_frames % frames
+            scores = scores.cpu().detach().numpy()  # transfer data to cpu to detach extra things in tensor and make it a numpy array  
+            all_scores.extend(scores)
+           
+            # if num_frames > frames:
+            #     scores = [score for score in scores for _ in range(num_frames//frames)]
+            #     all_scores.extend(scores)
+         
+            # last_score = scores[-1]
+            # remainder = num_frames % frames
             
-            if remainder != 0:
-                all_scores.extend(last_score for _ in range(remainder))
+            # if remainder != 0:
+            #     all_scores.extend(last_score for _ in range(remainder))
+
+           
             
             # Now turn for the ground truths
 
@@ -275,8 +267,10 @@ if __name__ == '__main__':
     parser.add_argument('--save', type=bool, default=False, help='Save the best AUC score model')
     parser.add_argument('--percent_data', type=float, default=0.2, help='percentage of unlabelled data to use for total normal and abnormal (write as 0.1 or 0.2)')
     parser.add_argument('--model_name', type=str, default='best_model.pth', help='Save name of the model params')
+    parser.add_argument('--a_frac', type=float, default=0.05,help='Fraction of the predctions to consider as anomaly')
     args = parser.parse_args()
 
+    a_frac = args.a_frac
     if not os.path.isdir('./checkpoints'):
         print('The directory for checkpoints doesnt exist creating one at ./checkpoints ')
         os.makedirs('./checkpoints')

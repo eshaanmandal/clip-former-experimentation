@@ -3,3 +3,4 @@ __pycache__
 checkpoints
 best_ssl_bce.pth
 plots
+plots_smooth
