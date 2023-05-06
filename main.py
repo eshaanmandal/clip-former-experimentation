@@ -104,31 +104,24 @@ def test(epoch, model, optim, device, val_dl, batch_size, frames=3000):
             clip_fts, num_frames = clip_fts.to(device), num_frames.item()
             # calculating anomaly scores
             scores = model(clip_fts)
+            scores = scores.squeeze(0).squeeze(-1)
+            scores = scores.cpu().detach().numpy()
 
-            if num_frames != frames:
-                scores = torch.permute(scores, (0, 2, 1)).unsqueeze(-1)
-                scores = F.interpolate(scores, size=(num_frames, 1), mode='bilinear')
-                scores = scores.squeeze(0).squeeze(0).squeeze(-1)
+            if num_frames >= frames:
+                scores = [score for score in scores for _ in range(num_frames // frames)]
+                all_scores.extend(scores)
+                last_score = scores[-1]
+                remainder = num_frames % frames
 
+                if remainder != 0:
+                    all_scores.extend(last_score for _ in range(remainder))
             else:
-                scores = scores.squeeze(0).squeeze(-1)
-         
-            scores = scores.cpu().detach().numpy()  # transfer data to cpu to detach extra things in tensor and make it a numpy array  
-            all_scores.extend(scores)
-           
-            # if num_frames > frames:
-            #     scores = [score for score in scores for _ in range(num_frames//frames)]
-            #     all_scores.extend(scores)
-         
-            # last_score = scores[-1]
-            # remainder = num_frames % frames
-            
-            # if remainder != 0:
-            #     all_scores.extend(last_score for _ in range(remainder))
+                skip = frames // num_frames
+                x = []
+                for i in range(0, num_frames, skip):
+                    x.append(np.sum(scores[i:i+skip])/len(scores[i:i+skip]))
+                all_scores.extend(x)
 
-           
-            
-            # Now turn for the ground truths
 
             video_gt_list = torch.zeros(num_frames)
 
