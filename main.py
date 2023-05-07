@@ -66,24 +66,18 @@ def train(
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
         loss = MIL(combined_anomaly_scores)
 
-        # if ssl_step != 0:
-        #     try:
-        #         print( torch.numel(label_a[label_a == -2]))
-        #         print(len([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]))
-        #         loss += sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
-        #             / torch.numel(label_a[label_a == -2])
-        #         print('Hi')
+        if ssl_step != 0 and use_bce:
+            try:
+                loss += sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
+                    / torch.numel(label_a[label_a == -2])
 
-        #         for i in range(label_a.item())
-        #     except:
-        #         print('No unlabelled anomalous video')
-        #         loss += 0 
-        #     try:
-        #         loss += sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
-        #             / torch.numel(label_n[label_n == -2 ])
-        #     except:
-        #         print('No ul normal part')
-        #         loss += 0
+            except:
+                loss += 0 
+            try:
+                loss += sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
+                    / torch.numel(label_n[label_n == -2 ])
+            except:
+                loss += 0
         
         running_loss += loss.item()
 
@@ -271,6 +265,7 @@ if __name__ == '__main__':
     parser.add_argument('--percent_data', type=float, default=0.2, help='percentage of unlabelled data to use for total normal and abnormal (write as 0.1 or 0.2)')
     parser.add_argument('--model_name', type=str, default='best_model.pth', help='Save name of the model params')
     parser.add_argument('--a_frac', type=float, default=0.05,help='Fraction of the predctions to consider as anomaly')
+    parser.add_argument('--use_bce', type=bool, default=False, help='use bce loss for unlabeled data')
     args = parser.parse_args()
 
     a_frac = args.a_frac
@@ -283,6 +278,7 @@ if __name__ == '__main__':
 
 
     # the hyperparameters
+    use_bce = args.use_bce
     if args.seed is not None:
         seed_everything(int(args.seed))
     seed = args.seed
