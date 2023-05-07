@@ -68,14 +68,16 @@ def train(
 
         if ssl_step != 0 and use_bce:
             try:
-                loss += sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
+                bce_anomaly_loss = sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
                     / torch.numel(label_a[label_a == -2])
+                loss += bce_anomaly_loss
 
             except:
                 loss += 0 
             try:
-                loss += sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
+                bce_normal_loss = sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
                     / torch.numel(label_n[label_n == -2 ])
+                loss += bce_normal_loss
             except:
                 loss += 0
         
