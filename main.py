@@ -24,6 +24,7 @@ import torchmetrics
 LABELLED = 2
 UNLABELLED = -2 
 a_frac = 0.05
+use_bce=False
 
 def train(
         epoch, 
@@ -59,7 +60,6 @@ def train(
 
         # calculating losses
         score_a, score_n = model(clip_a), model(clip_n)
-        print(label_a, label_n)
 
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
@@ -177,9 +177,10 @@ def train_once(
     indexes
 ):
     #aucs = []
+    total_ssl_loss = 0.0
 
     for epoch in range(epochs):
-        loss = train(
+        total_ssl_loss += train(
             epoch,
             ssl_step,
             model, 
@@ -192,6 +193,7 @@ def train_once(
             unlabelled_ds,
             indexes
         )
+
         #wandb.log({"train_loss":loss})
         auc = test(epoch, model, optimizer, device, val_dl, valid_bs, num_feats)
         #aucs.append(auc)
@@ -216,7 +218,7 @@ def train_once(
     #plt.ylabel('AUC')
     #plt.savefig(path_for_plots)
     
-    return best_auc, model
+    return best_auc, model, (total_ssl_loss/epochs)
 
 def predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data = 0.1, frames=3000):
     
@@ -354,7 +356,7 @@ if __name__ == '__main__':
         print("Length of anomaly dataset: ", len(train_anomaly_ds))
         print("Length of unlabelled dataset remaining: ", len(list_of_unlabelled_videos))
 
-        best_auc, model = train_once(
+        best_auc, model, loss = train_once(
             train_anomaly_dl, 
             train_normal_dl, 
             val_dl, 
@@ -376,7 +378,7 @@ if __name__ == '__main__':
             curr_best_auc = best_auc
 
         if args.use_wandb:
-            wandb.log({"auc_per_run":curr_best_auc})
+            wandb.log({"auc_per_ssl":curr_best_auc, "loss_per_ssl":loss})
         
         ## Do we need to load best model??? YES
         # if models are being saved load the best 
