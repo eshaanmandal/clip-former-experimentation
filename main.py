@@ -88,7 +88,7 @@ def train(
     return (running_loss / l)
 
 
-def test(epoch, model, optim, device, val_dl, batch_size, frames=3000):
+def test(epoch, model, device, val_dl, frames=3000):
     '''
         Method for doing test/validation on the testing clip feats.
     '''
@@ -179,7 +179,7 @@ def train_once(
         )
 
         #wandb.log({"train_loss":loss})
-        auc = test(epoch, model, optimizer, device, val_dl, valid_bs, num_feats)
+        auc = test(epoch, model, device, val_dl, num_feats)
         #aucs.append(auc)
         print(f'AUC score for epoch {epoch+1} : {auc}')
         if auc > best_auc:
