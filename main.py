@@ -248,7 +248,7 @@ if __name__ == '__main__':
     parser.add_argument('--val_path', type=str, default='..', help='Path to the validation videos')
     parser.add_argument('--unlabelled_path', type=str, default='..', help='Path to the unalbelled video clip features')
     parser.add_argument('--use_wandb', type=bool, default=False, help='Use wandb')
-    parser.add_argument('--device', type=str, default='cpu', help='The device to use for model training and inference')
+    parser.add_argument('--device', type=str, default='cuda:0', help='The device to use for model training and inference')
     parser.add_argument('--train_bs', type=int, default=1, help='Training batch size')
     parser.add_argument('--p_name', type=str, default='default_proj', help='name of the wandb project (if using wandb)')
     parser.add_argument('--save', type=bool, default=False, help='Save the best AUC score model')
