@@ -23,8 +23,7 @@ import torchmetrics
 # these signify the labelled and unlabelled video
 LABELLED = 2
 UNLABELLED = -2 
-a_frac = 0.05
-use_bce=False
+
 
 def train(
         epoch, 
@@ -33,13 +32,8 @@ def train(
         optim, 
         device, 
         train_dl, 
-        batch_size, 
-        unlabelled_dl, 
-        valid_bs, 
-        percent_data, 
-        num_feats, 
-        unlabelled_ds, 
-        indexes
+        a_frac,
+        use_bce
 ):
     '''
         Method for training the CLIP-ANOMALY-DETECTION Model
@@ -67,19 +61,16 @@ def train(
         loss = MIL(combined_anomaly_scores)
 
         if ssl_step != 0 and use_bce:
-            print('Using BCE loss')
             try:
-                bce_anomaly_loss = sum([bce(score_a[i], 1, a_frac) for i in range(label_a.shape[0]) if label_a[i] == -2]) \
+                bce_anomaly_loss = sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
                     / torch.numel(label_a[label_a == -2])
-                print(f'BCE for anomalous part {bce_anomaly_loss}')
                 loss += bce_anomaly_loss
 
             except:
                 loss += 0 
             try:
-                bce_normal_loss = sum([bce(score_n[i], 0, a_frac) for i in range(label_n.shape[0]) if label_n[i] == -2]) \
+                bce_normal_loss = sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
                     / torch.numel(label_n[label_n == -2 ])
-                print(f'BCE for normal part {bce_normal_loss}')
                 loss += bce_normal_loss
             except:
                 loss += 0
@@ -163,17 +154,14 @@ def train_once(
     train_anomaly_dl, 
     train_normal_dl, 
     val_dl,
-    train_bs, 
     valid_bs, 
     epochs, 
     ssl_step, 
     num_feats, 
     best_auc, 
     model_name, 
-    unlabelled_dl,
-    percent_data, 
-    unlabelled_ds,
-    indexes
+    a_frac,
+    use_bce
 ):
     #aucs = []
     total_ssl_loss = 0.0
@@ -186,11 +174,8 @@ def train_once(
             optimizer, 
             device, 
             [train_anomaly_dl, train_normal_dl], 
-            train_bs, unlabelled_dl, valid_bs, 
-            percent_data, 
-            num_feats,
-            unlabelled_ds,
-            indexes
+            a_frac,
+            use_bce
         )
 
         #wandb.log({"train_loss":loss})
@@ -273,7 +258,6 @@ if __name__ == '__main__':
     parser.add_argument('--use_bce', type=bool, default=False, help='use bce loss for unlabeled data')
     args = parser.parse_args()
 
-    a_frac = args.a_frac
     if not os.path.isdir('./checkpoints'):
         print('The directory for checkpoints doesnt exist creating one at ./checkpoints ')
         os.makedirs('./checkpoints')
@@ -281,9 +265,7 @@ if __name__ == '__main__':
         print('The directory already exists skipping the folder creation step')
 
 
-
     # the hyperparameters
-    use_bce = args.use_bce
     if args.seed is not None:
         seed_everything(int(args.seed))
     seed = args.seed
@@ -361,17 +343,14 @@ if __name__ == '__main__':
             train_anomaly_dl, 
             train_normal_dl, 
             val_dl, 
-            train_bs, 
             valid_bs, 
             epochs, 
             ssl_step,
             num_feats, 
             curr_best_auc, 
             args.model_name,
-            unlabelled_dl,
-            percent_data, 
-            unlabelled_ds,
-            indexes
+            args.a_frac,
+            args.use_bce
         )
         print("BEST TEST AUC: ", best_auc.item())
 
