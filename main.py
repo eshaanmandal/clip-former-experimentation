@@ -67,16 +67,19 @@ def train(
         loss = MIL(combined_anomaly_scores)
 
         if ssl_step != 0 and use_bce:
+            print('Using BCE loss')
             try:
-                bce_anomaly_loss = sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
+                bce_anomaly_loss = sum([bce(score_a[i], 1, a_frac) for i in range(label_a.shape[0]) if label_a[i] == -2]) \
                     / torch.numel(label_a[label_a == -2])
+                print(f'BCE for anomalous part {bce_anomaly_loss}')
                 loss += bce_anomaly_loss
 
             except:
                 loss += 0 
             try:
-                bce_normal_loss = sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
+                bce_normal_loss = sum([bce(score_n[i], 0, a_frac) for i in range(label_n.shape[0]) if label_n[i] == -2]) \
                     / torch.numel(label_n[label_n == -2 ])
+                print(f'BCE for normal part {bce_normal_loss}')
                 loss += bce_normal_loss
             except:
                 loss += 0

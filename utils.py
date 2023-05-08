@@ -43,25 +43,27 @@ def bce(score, feat_type, percentage=0.02):
     # 0 means normal videos
     if feat_type == 0:
         ground_truth_normal = torch.zeros_like(score)
-        bce_loss = F.binary_cross_entropy(score, ground_truth_normal)
+        bce_loss = F.binary_cross_entropy_with_logits(score, ground_truth_normal)
         return bce_loss
 
     # 1 means anomaly
     if feat_type == 1:
         ground_truth_anomalous = torch.zeros_like(score)
         topk = int(percentage * score.shape[0])
-        rest = score.shape[1] - topk
+        rest = score.shape[0] - topk
 
         score = torch.sort(score, descending=True)[0]
 
         a_part = score[:topk]
         n_part = score[topk:]
 
-        bce_normal_part = F.binary_cross_entropy(n_part, torch.zeros_like(n_part))
+        bce_normal_part = F.binary_cross_entropy_with_logits(n_part, torch.zeros_like(n_part))
 
-        bce_anomalous_part = F.binary_cross_entropy(a_part, torch.ones_like(a_part))
+        bce_anomalous_part = F.binary_cross_entropy_with_logits(a_part, torch.ones_like(a_part))
 
         bce_loss = (bce_anomalous_part/topk) + (bce_normal_part / rest)
+        print(f'topk :{topk} rest : {rest}')
+        print(f'Anomalous part {bce_anomalous_part/topk} Normal part {bce_normal_part/rest}')
         return bce_loss
 
 
