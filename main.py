@@ -19,14 +19,35 @@ import argparse
 import gc
 import torchmetrics
 
-def train(epoch, model, optim, device, train_dl, batch_size):
+
+# these signify the labelled and unlabelled video
+LABELLED = 2
+UNLABELLED = -2 
+a_frac = 0.05
+
+def train(
+        epoch, 
+        ssl_step, 
+        model, 
+        optim, 
+        device, 
+        train_dl, 
+        batch_size, 
+        unlabelled_dl, 
+        valid_bs, 
+        percent_data, 
+        num_feats, 
+        unlabelled_ds, 
+        indexes
+):
     '''
         Method for training the CLIP-ANOMALY-DETECTION Model
 
     '''
     model.train() # sets the model into training mode
     print(f'Epoch {epoch+1}')
-
+    # get the index
+    
     anomaly_dl, normal_dl = train_dl[0], train_dl[1] # train_dl is a list [compactly passing the anomaly and normal clip feats dataloader]
     running_loss = 0.0
     l = min(len(anomaly_dl), len(normal_dl)) # simply means len(either dataloader) because same length for both
@@ -38,16 +59,37 @@ def train(epoch, model, optim, device, train_dl, batch_size):
 
         # calculating losses
         score_a, score_n = model(clip_a), model(clip_n)
+        print(label_a, label_n)
+
         
         # cocatenating the anomaly and normal scores along the batch dimension [useful for computing MIL loss]
         combined_anomaly_scores = torch.cat([score_a, score_n], dim=0)
         loss = MIL(combined_anomaly_scores)
+
+        # if ssl_step != 0:
+        #     try:
+        #         print( torch.numel(label_a[label_a == -2]))
+        #         print(len([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]))
+        #         loss += sum([bce(score_a[i], 1, a_frac) for i in range(label_a.item()) if label_a[i] == -2]) \
+        #             / torch.numel(label_a[label_a == -2])
+        #         print('Hi')
+
+        #         for i in range(label_a.item())
+        #     except:
+        #         print('No unlabelled anomalous video')
+        #         loss += 0 
+        #     try:
+        #         loss += sum([bce(score_n[i], 0, a_frac) for i in range(label_n.item()) if label_n[i] == -2]) \
+        #             / torch.numel(label_n[label_n == -2 ])
+        #     except:
+        #         print('No ul normal part')
+        #         loss += 0
+        
         running_loss += loss.item()
 
         optim.zero_grad()
         loss.backward()
         optim.step()
-
 
     print('train loss = {}'.format(running_loss/l))
     del anomaly_dl, normal_dl, clip_a, clip_n, score_a, score_n
@@ -66,44 +108,28 @@ def test(epoch, model, optim, device, val_dl, batch_size, frames=3000):
     all_scores = []
 
     with torch.no_grad():
-        for clip_fts, num_frames, video_gt in tqdm(val_dl):
+        for clip_fts, num_frames, video_gt, _ in tqdm(val_dl):
             clip_fts, num_frames = clip_fts.to(device), num_frames.item()
             # calculating anomaly scores
             scores = model(clip_fts)
-            scores = scores.squeeze(0).squeeze(-1) # scores dimension = (frames) 
-            scores = scores.cpu().detach().numpy()  # transfer data to cpu to detach extra things in tensor and make it a numpy array  
+            scores = scores.squeeze(0).squeeze(-1)
+            scores = scores.cpu().detach().numpy()
 
-            '''
-                The important part
-
-                Since, we have to make framewise prediction but, we our clip features is working on a reduced number of frames 
-                (3000 for e.g.). What we need to do is extend the features so as to make it equal to the number of features. 
-
-                Case 1:
-                lets say we have a prediction sequence of 3000 but 9600 frames (of the video on which we are trying to make preds)
-
-                So our 3000 feats have to fit 9600 frames
-
-                Therefore, we repeat each feature 9600 //  3000 = 3 ; we repeat each feature 3 time and for the remainder we extend the
-                scores[-1] the last prediction (of the 3000 frames)
-
-                Case 2: if the number of frames is less is number than the predicted features
-
-                Just fill the prediction with the last score of (3000 preds) [times the number of frames]
-                lets day we have 100 frames so, we take scores[-1] (lets say 0.6) and make an array [0.6, 0.6, 0.6, ..... 0.6] (len 100)
-                 
-            '''
-            if num_frames > frames:
-                scores = [score for score in scores for _ in range(num_frames//frames)]
+            if num_frames >= frames:
+                scores = [score for score in scores for _ in range(num_frames // frames)]
                 all_scores.extend(scores)
-         
-            last_score = scores[-1]
-            remainder = num_frames % frames
-            
-            if remainder != 0:
-                all_scores.extend(last_score for _ in range(remainder))
-            
-            # Now turn for the ground truths
+                last_score = scores[-1]
+                remainder = num_frames % frames
+
+                if remainder != 0:
+                    all_scores.extend(last_score for _ in range(remainder))
+            else:
+                skip = frames // num_frames
+                x = []
+                for i in range(0, num_frames, skip):
+                    x.append(np.sum(scores[i:i+skip])/len(scores[i:i+skip]))
+                all_scores.extend(x)
+
 
             video_gt_list = torch.zeros(num_frames)
 
@@ -134,11 +160,38 @@ def seed_everything(seed: int = 10):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = True
 
-def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, best_auc, model_name):
+def train_once(
+    train_anomaly_dl, 
+    train_normal_dl, 
+    val_dl,
+    train_bs, 
+    valid_bs, 
+    epochs, 
+    ssl_step, 
+    num_feats, 
+    best_auc, 
+    model_name, 
+    unlabelled_dl,
+    percent_data, 
+    unlabelled_ds,
+    indexes
+):
     #aucs = []
 
     for epoch in range(epochs):
-        loss = train(epoch, model, optimizer, device, [train_anomaly_dl, train_normal_dl], train_bs)
+        loss = train(
+            epoch,
+            ssl_step,
+            model, 
+            optimizer, 
+            device, 
+            [train_anomaly_dl, train_normal_dl], 
+            train_bs, unlabelled_dl, valid_bs, 
+            percent_data, 
+            num_feats,
+            unlabelled_ds,
+            indexes
+        )
         #wandb.log({"train_loss":loss})
         auc = test(epoch, model, optimizer, device, val_dl, valid_bs, num_feats)
         #aucs.append(auc)
@@ -147,7 +200,12 @@ def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, ep
             save_path = os.path.join('./checkpoints',model_name)
             if args.save:
                 print(f'Saving the best model params to : {save_path}')
-                torch.save(model.state_dict(), save_path)
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict':model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'auc':auc
+                }, save_path)
             best_auc = auc
         print(f'Best AUC score is {best_auc}')
 
@@ -162,7 +220,7 @@ def train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, ep
 
 def predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data = 0.1, frames=3000):
     
-    print(f'Getting prediction on unlabelled dataset:')
+    # print(f'Getting prediction on unlabelled dataset:')
     model.eval() # Sets the model to eval mode
     predicted_gts = []  #list of predicted video level labels for all unlabelled videos
 
@@ -184,7 +242,7 @@ def predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data =
     normal_idx = [sorted_idx[i] for i in range(num_vids)]
     anomaly_idx = [sorted_idx[-i-1] for i in range(num_vids)]
 
-
+    # print(len(normal_idx), len(anomaly_idx))
     return normal_idx, anomaly_idx
 
 
@@ -210,8 +268,10 @@ if __name__ == '__main__':
     parser.add_argument('--save', type=bool, default=False, help='Save the best AUC score model')
     parser.add_argument('--percent_data', type=float, default=0.2, help='percentage of unlabelled data to use for total normal and abnormal (write as 0.1 or 0.2)')
     parser.add_argument('--model_name', type=str, default='best_model.pth', help='Save name of the model params')
+    parser.add_argument('--a_frac', type=float, default=0.05,help='Fraction of the predctions to consider as anomaly')
     args = parser.parse_args()
 
+    a_frac = args.a_frac
     if not os.path.isdir('./checkpoints'):
         print('The directory for checkpoints doesnt exist creating one at ./checkpoints ')
         os.makedirs('./checkpoints')
@@ -263,7 +323,7 @@ if __name__ == '__main__':
 
     val_dl = DataLoader(valid_ds, batch_size=valid_bs, shuffle=True, num_workers=16)
 
-    unlabelled_dl = DataLoader(unlabelled_ds, batch_size=valid_bs, shuffle=False, num_workers=16) 
+    unlabelled_dl = DataLoader(unlabelled_ds, batch_size=valid_bs, shuffle=True, num_workers=16) 
 
     if args.use_wandb:
         wandb.init(
@@ -283,18 +343,33 @@ if __name__ == '__main__':
     
     list_of_unlabelled_videos = os.listdir(path_to_unlabelled)
     curr_best_auc = 0.5
-
-    for epoch in range(total_epochs):
+    indexes=None
+    for ssl_step in range(total_epochs):
 
         print("################################")
-        print("SSL Step: ", epoch+1)
+        print("SSL Step: ", ssl_step+1)
         print("################################")
 
         print("Length of normal dataset: ", len(train_normal_ds))
         print("Length of anomaly dataset: ", len(train_anomaly_ds))
         print("Length of unlabelled dataset remaining: ", len(list_of_unlabelled_videos))
 
-        best_auc, model = train_once(train_anomaly_dl, train_normal_dl, val_dl, train_bs, valid_bs, epochs, num_feats, curr_best_auc, args.model_name)
+        best_auc, model = train_once(
+            train_anomaly_dl, 
+            train_normal_dl, 
+            val_dl, 
+            train_bs, 
+            valid_bs, 
+            epochs, 
+            ssl_step,
+            num_feats, 
+            curr_best_auc, 
+            args.model_name,
+            unlabelled_dl,
+            percent_data, 
+            unlabelled_ds,
+            indexes
+        )
         print("BEST TEST AUC: ", best_auc.item())
 
         if best_auc > curr_best_auc:
@@ -304,14 +379,18 @@ if __name__ == '__main__':
             wandb.log({"auc_per_run":curr_best_auc})
         
         ## Do we need to load best model??? YES
+        # if models are being saved load the best 
         if args.save:
             load_path = os.path.join('./checkpoints', args.model_name)
             print(f'Loading the best model params from : {load_path}')
-            model.load_state_dict(torch.load(load_path))
+            checkpoint = torch.load(load_path)
+            model.load_state_dict(checkpoint['model_state_dict'])
+
         # for that update later
         
-        normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data, num_feats)
-        
+        print(f'Getting prediction on unlabelled dataset:')
+        normal_idx, anomaly_idx = predict_on_unlabelled(model, device, unlabelled_dl, valid_bs, percent_data/2, num_feats)
+        indexes = [anomaly_idx, normal_idx]
         
         ######
         """

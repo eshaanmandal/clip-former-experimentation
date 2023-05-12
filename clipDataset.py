@@ -47,7 +47,8 @@ class NormalVideo(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         x = x.squeeze(0)
         # x = torch.mean(x, dim=1)
-        return x, 0
+        # 2 means labelled
+        return x, 2
     
 
 
@@ -95,13 +96,19 @@ class NormalVideo_modified(Dataset):
 
         
     def __getitem__(self, idx: int):
-        anomaly_clip = np.load(os.path.join(self.base_dir, self.total_list[idx]))
+        path = os.path.join(self.base_dir, self.total_list[idx])
+        anomaly_clip = np.load(path)
         x = torch.from_numpy(anomaly_clip).to(torch.float32)
         x = self.interpolate(x, x.shape[0])
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         x = x.squeeze(0)
         # x = torch.mean(x, dim=1)
-        return x, 0
+        # -2 means unlabelled
+        if 'normal' in path.lower():
+            return x, 2
+        else:
+            return x, -2
+    
 
 
 class AnomalyVideo(Dataset):
@@ -142,7 +149,7 @@ class AnomalyVideo(Dataset):
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         # x = torch.mean(x, dim=1)
         x = x.squeeze(0)
-        return x, 1
+        return x, 2
 
 
 
@@ -191,13 +198,17 @@ class AnomalyVideo_modified(Dataset):
         return x
     
     def __getitem__(self, idx: int):
-        anomaly_clip = np.load(os.path.join(self.base_dir, self.total_list[idx]))
+        path = os.path.join(self.base_dir, self.total_list[idx])
+        anomaly_clip = np.load(path)
         x = torch.from_numpy(anomaly_clip).to(torch.float32)
         x = self.interpolate(x, x.shape[0])
         # x = x.reshape(1, self.bags, self.frames//self.bags, -1).squeeze(0)
         # x = torch.mean(x, dim=1)
         x = x.squeeze(0)
-        return x, 1
+        if 'anomaly' in path.lower():
+            return x, 2
+        else:
+            return x, -2
 
 
     
@@ -242,7 +253,7 @@ class ValidationVideo(Dataset):
         # removing the batch we don't need it; it would be added by the dataloader
         x = x.squeeze(0)
 
-        return x, int(num_frames), video_gts
+        return x, int(num_frames), video_gts, name
 
 
 class UnlabelledVideo(Dataset):
